@@ -168,47 +168,65 @@
     oversized: { label: "Meget løs", pct: 94 },
   };
 
+  // Build the bars from the AI's per-zone visual verdict (accurate for eased /
+  // oversized garments), keeping the chart numbers for transparency.
+  function breakdownFromZones(profile, row, zones, aiZones) {
+    const byChart = Object.fromEntries(makeBreakdown(profile, row, zones).map((b) => [b.zone, b]));
+    return aiZones
+      .map((z) => {
+        const key = FIT_PRESET[z.fit] ? z.fit : "regular";
+        const preset = FIT_PRESET[key];
+        const base = byChart[z.zone] || {};
+        return {
+          zone: z.zone,
+          zoneLabel: ZONE_LABEL[z.zone] || z.zone,
+          gap: base.gap ?? null,
+          garmentValue: base.garmentValue ?? null,
+          bodyValue: base.bodyValue ?? num(profile[z.zone]),
+          key,
+          fitLabel: preset.label,
+          pct: preset.pct,
+        };
+      })
+      .filter((b) => b.bodyValue != null);
+  }
+
+  const PREF_SHIFT = { tight: -1, regular: 0, loose: 1 };
+
   function fromAI(profile, garment, ai) {
     const type = garment.type && ZONES_BY_TYPE[garment.type] ? garment.type : "unknown";
     const zones = ZONES_BY_TYPE[type];
     const rows = Array.isArray(garment.rows) ? garment.rows : [];
+
+    // The AI picks the INTENDED-look size (as the model wears it). Fit preference
+    // is then applied deterministically here, so it is always monotonic:
+    // tight = one size down, loose = one size up. Never the other way around.
     const want = String(ai.size || "").toUpperCase();
-    const row = rows.find((r) => String(r.size).toUpperCase() === want) || rows[0] || {};
+    let baseIdx = rows.findIndex((r) => String(r.size).toUpperCase() === want);
+    if (baseIdx < 0) baseIdx = 0;
+    const wantShift = PREF_SHIFT[profile.fit] ?? 0;
+    const newIdx = Math.max(0, Math.min(rows.length - 1, baseIdx + wantShift));
+    const prefShift = newIdx - baseIdx; // -1, 0 or +1 after clamping
+    const row = rows[newIdx] || rows[0] || {};
+    const size = row.size != null ? row.size : ai.size;
 
-    let breakdown = makeBreakdown(profile, row, zones);
+    // Only trust the AI's per-zone verdict when we haven't shifted off its size.
+    const breakdown =
+      prefShift === 0 && Array.isArray(ai.zones) && ai.zones.length
+        ? breakdownFromZones(profile, row, zones, ai.zones)
+        : makeBreakdown(profile, row, zones);
 
-    // If the AI graded each zone visually, use that for the bars (more accurate
-    // for eased/oversized garments), keeping the chart numbers for transparency.
-    if (Array.isArray(ai.zones) && ai.zones.length) {
-      const byChart = Object.fromEntries(breakdown.map((b) => [b.zone, b]));
-      breakdown = ai.zones
-        .map((z) => {
-          const key = FIT_PRESET[z.fit] ? z.fit : "regular";
-          const preset = FIT_PRESET[key];
-          const base = byChart[z.zone] || {};
-          return {
-            zone: z.zone,
-            zoneLabel: ZONE_LABEL[z.zone] || z.zone,
-            gap: base.gap ?? null,
-            garmentValue: base.garmentValue ?? null,
-            bodyValue: base.bodyValue ?? num(profile[z.zone]),
-            key,
-            fitLabel: preset.label,
-            pct: preset.pct,
-          };
-        })
-        .filter((b) => b.bodyValue != null);
-    }
     let confidence = typeof ai.confidence === "number" ? ai.confidence : 0.6;
     confidence = Math.max(0.08, Math.min(0.97, confidence));
     const level = confidence >= 0.7 ? "high" : confidence >= 0.45 ? "medium" : "low";
 
     return {
       ok: true,
-      size: ai.size,
+      size,
       confidence,
       level,
       reason: ai.reason || "",
+      prefShift,
       intendedFit: ai.intendedFit || null,
       breakdown,
       alternatives: (ai.alternatives || []).map((a) =>

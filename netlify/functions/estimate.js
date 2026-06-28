@@ -67,11 +67,12 @@ SÅDAN RÆSONNERER DU (følg rækkefølgen):
    matcher den vidde man ser på billedet.
 3. ESTIMÉR en tabel over de KROPSMÅL (cm) hver størrelse er skåret til at passe,
    forankret til modellen + den synlige vidde.
-4. ANBEFAL størrelse til DENNE bruger nedenfor. VIGTIGT: for oversized/relaxed tøj
-   må du IKKE skubbe brugeren en størrelse op bare fordi der er vidde — den vidde er
-   designet ind. Giv brugeren SAMME forhold til tøjet som modellen har. Hvis brugeren
-   ligner modellens kropstype, og modellen bærer M, så er svaret typisk M.
-   Brugerens ønske om pasform: "${fitPref}" (tight=tættere, regular=som designet, loose=rummeligere).
+4. ANBEFAL den INTENDEREDE størrelse til DENNE bruger — dvs. den størrelse der giver
+   brugeren SAMME look som tøjet er designet til (som modellen bærer det). VIGTIGT:
+   for oversized/relaxed tøj må du IKKE skubbe brugeren en størrelse op bare fordi der
+   er vidde — den vidde er designet ind. Hvis brugeren ligner modellens kropstype, og
+   modellen bærer M, så er svaret typisk M. IGNORÉR brugerens personlige pasform-ønske
+   (stram/løs) — det håndteres separat bagefter. Anbefal kun den intenderede pasform.
 
 BRUGERENS MÅL (cm): ${JSON.stringify(measurements)}
 Tøjtype: ${type} · Køn: ${gender} · Snit fra tekst: ${fit || "ukendt"}
@@ -84,7 +85,7 @@ Returnér KUN gyldig JSON, præcis dette format:
   "recommendedSize": "M",
   "confidence": 0.0-1.0,
   "zones": [{"zone":"chest","fit":"relaxed"},{"zone":"shoulder","fit":"regular"},{"zone":"waist","fit":"oversized"}],
-  "reasoning": "2-3 sætninger på ${LANG_NAME}: nævn hvad du SER på billederne, modellen som anker, og hvorfor netop denne størrelse passer brugeren",
+  "reasoning": "2-3 sætninger på ${LANG_NAME}: nævn hvad du SER på billederne, modellen som anker, og hvorfor pasformen passer brugeren. NÆVN IKKE størrelsesbogstavet (S/M/L) i teksten — beskriv kun pasformen.",
   "alternatives": [{"size":"S","when":"hvis du vil have et mindre oversized look"},{"size":"L","when":"hvis du vil have det endnu mere rummeligt"}]
 }
 

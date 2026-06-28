@@ -248,8 +248,10 @@
 
   // ---- per-product cache (consistency + saves credits) -------------------
   function cacheKey(productKey) {
+    // Note: fit preference is applied deterministically after the AI call, so it
+    // is intentionally NOT part of the key — changing it reuses the cache.
     const p = profile;
-    return [productKey, p.chest, p.waist, p.hip, p.shoulder, p.height, p.fit, p.gender, lang].join("|");
+    return [productKey, p.chest, p.waist, p.hip, p.shoulder, p.height, p.gender, lang].join("|");
   }
   async function getCached(productKey) {
     if (!hasChrome) return null;
@@ -308,7 +310,12 @@
   }
 
   function reasonText(rec) {
-    if (rec.source === "ai-estimate" && rec.reason) return rec.reason;
+    if (rec.source === "ai-estimate") {
+      let r = rec.reason || "";
+      if (rec.prefShift < 0) r = T("reason.prefDown") + (r ? " " + r : "");
+      else if (rec.prefShift > 0) r = T("reason.prefUp") + (r ? " " + r : "");
+      return r;
+    }
     if (rec.reasonKey === "bestMatch" && rec.primaryZone) {
       let s = T("reason.bestMatch", {
         zone: T("zone." + rec.primaryZone).toLowerCase(),
