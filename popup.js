@@ -193,6 +193,8 @@
             };
             rec = window.FitMatch.fromAI(profile, garment, aiRec);
             await setCached(productKey, { rows: ai.rows, type: garment.type, ai: aiRec });
+          } else if (ai && ai.reason === "rate-limited") {
+            throw new Error(T("err.rateLimited"));
           } else {
             const g = GENERIC[profile.gender] || GENERIC.unisex;
             const gType = garment.type === "bottom" ? "bottom" : "top";

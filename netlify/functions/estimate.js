@@ -13,6 +13,7 @@
  *   netlify env:set ANTHROPIC_API_KEY sk-ant-...
  */
 const Anthropic = require("@anthropic-ai/sdk");
+const { getStore } = require("@netlify/blobs");
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -22,6 +23,36 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+// Budget protection: per-install daily quota + per-IP hourly abuse backstop.
+// Tunable via env vars. Each AI call costs money, so this caps the blast radius
+// of a bug or a malicious caller hitting the public endpoint.
+const DAILY_PER_CLIENT = Number(process.env.FM_DAILY_PER_CLIENT || 40);
+const HOURLY_PER_IP = Number(process.env.FM_HOURLY_PER_IP || 80);
+
+async function bump(store, key, limit) {
+  const n = Number((await store.get(key)) || 0);
+  if (n >= limit) return false;
+  await store.set(key, String(n + 1)); // fixed-window counter; minor races are fine for a cap
+  return true;
+}
+
+// Returns null if allowed, or a scope string if the limit is hit. Fails OPEN on
+// store errors so a storage hiccup never breaks the product for legit users.
+async function rateLimited(clientId, ip) {
+  try {
+    const store = getStore("fitmatch-ratelimit");
+    const iso = new Date().toISOString();
+    const day = iso.slice(0, 10); // yyyy-mm-dd
+    const hour = iso.slice(0, 13); // yyyy-mm-ddTHH
+    if (clientId && !(await bump(store, `c_${clientId}_${day}`, DAILY_PER_CLIENT))) return "client";
+    if (ip && !(await bump(store, `i_${ip}_${hour}`, HOURLY_PER_IP))) return "ip";
+    return null;
+  } catch (e) {
+    console.error("rate-limit store error (failing open):", String(e));
+    return null;
+  }
+}
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: CORS, body: "" };
@@ -44,7 +75,22 @@ exports.handler = async (event) => {
     measurements = {},
     fitPref = "regular",
     lang = "en",
+    clientId = null,
   } = payload;
+
+  // Enforce the quota BEFORE the paid Claude call.
+  const ip =
+    event.headers["x-nf-client-connection-ip"] ||
+    (event.headers["x-forwarded-for"] || "").split(",")[0].trim() ||
+    null;
+  const limited = await rateLimited(clientId, ip);
+  if (limited) {
+    return {
+      statusCode: 429,
+      headers: CORS,
+      body: JSON.stringify({ ok: false, reason: "rate-limited", scope: limited }),
+    };
+  }
 
   const LANG_NAME =
     { en: "English", da: "Danish", de: "German", fr: "French", es: "Spanish" }[lang] || "English";

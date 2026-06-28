@@ -4,6 +4,7 @@
   "private": true,
   "description": "Serverless AI-estimat-funktion til FitMatch Chrome-extension",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.106.0"
+    "@anthropic-ai/sdk": "^0.106.0",
+    "@netlify/blobs": "^10.7.9"
   }
 }

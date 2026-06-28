@@ -12,6 +12,16 @@ const CONFIG = {
   defaultEndpoint: "https://myfitmatch.netlify.app/.netlify/functions/estimate",
 };
 
+// A stable anonymous per-install id, so the backend can apply a fair daily quota
+// without identifying the user. Generated once, stored locally.
+async function getClientId() {
+  const { clientId } = await chrome.storage.local.get("clientId");
+  if (clientId) return clientId;
+  const id = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now()) + Math.random();
+  await chrome.storage.local.set({ clientId: id });
+  return id;
+}
+
 async function aiEstimateGarment(payload) {
   const { apiEndpoint } = await chrome.storage.local.get("apiEndpoint");
   const endpoint = apiEndpoint || CONFIG.defaultEndpoint;
@@ -19,11 +29,13 @@ async function aiEstimateGarment(payload) {
     return { ok: false, reason: "no-endpoint" };
   }
   try {
+    const clientId = await getClientId();
     const res = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, clientId }),
     });
+    if (res.status === 429) return { ok: false, reason: "rate-limited" };
     if (!res.ok) return { ok: false, reason: "http-" + res.status };
     return await res.json();
   } catch (e) {
