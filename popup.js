@@ -138,31 +138,56 @@
       });
       if (!garment || !garment.ok) throw new Error("Kunne ikke læse siden.");
 
-      // No size table on the page → try the AI estimate, else a generic chart.
-      if (!garment.rows || garment.rows.length === 0) {
-        setAnalyzedPage(garment.title, garment.site, "AI analyserer billeder + tekst …");
-        const ai = await tryAI(garment);
-        if (ai && ai.ok && ai.rows && ai.rows.length) {
-          garment.rows = ai.rows;
+      const productKey = (tab.url || "").split("#")[0].split("?")[0];
+      let rec;
+
+      if (garment.rows && garment.rows.length) {
+        // Real size table on the page → deterministic local match (no AI, no credits).
+        rec = window.FitMatch.recommend(profile, garment);
+      } else {
+        // No table → use the model-anchored, image-aware AI advisor (cached per product+profile).
+        const cached = await getCached(productKey);
+        if (cached) {
+          garment.rows = cached.rows;
+          garment.type = cached.type || garment.type;
           garment.source = "ai-estimate";
-          garment.note = ai.note || "AI-estimat ud fra produktets billeder og tekst.";
-          if (ai.type) garment.type = ai.type;
+          garment.note = cached.ai.reason;
+          rec = window.FitMatch.fromAI(profile, garment, cached.ai);
         } else {
-          const g = GENERIC[profile.gender] || GENERIC.unisex;
-          const gType = garment.type === "bottom" ? "bottom" : "top";
-          garment.rows = g[gType];
-          garment.type = gType;
-          garment.source = "generic";
-          garment.note =
-            ai && ai.reason === "no-endpoint"
-              ? "Ingen tabel på siden, og AI-analyse er ikke sat op endnu – brugte en generisk standardtabel."
-              : "Ingen tabel fundet, og AI kunne ikke estimere – brugte en generisk standardtabel.";
+          setAnalyzedPage(garment.title, garment.site, "AI vurderer billeder, model + dine mål …");
+          const ai = await tryAI(garment);
+          if (ai && ai.ok && ai.rows && ai.rows.length && ai.recommendedSize) {
+            garment.rows = ai.rows;
+            garment.type = ai.type || garment.type;
+            garment.source = "ai-estimate";
+            garment.note = ai.reasoning || ai.note;
+            const aiRec = {
+              size: ai.recommendedSize,
+              confidence: ai.confidence,
+              reason: ai.reasoning,
+              alternatives: ai.alternatives,
+              intendedFit: ai.intendedFit,
+              zones: ai.zones,
+            };
+            rec = window.FitMatch.fromAI(profile, garment, aiRec);
+            await setCached(productKey, { rows: ai.rows, type: garment.type, ai: aiRec });
+          } else {
+            const g = GENERIC[profile.gender] || GENERIC.unisex;
+            const gType = garment.type === "bottom" ? "bottom" : "top";
+            garment.rows = g[gType];
+            garment.type = gType;
+            garment.source = "generic";
+            garment.note =
+              ai && ai.reason === "no-endpoint"
+                ? "Ingen tabel på siden, og AI-analyse er ikke sat op endnu – brugte en generisk standardtabel."
+                : "Ingen tabel fundet, og AI kunne ikke estimere – brugte en generisk standardtabel.";
+            rec = window.FitMatch.recommend(profile, garment);
+          }
         }
       }
 
-      const rec = window.FitMatch.recommend(profile, garment);
       if (!rec.ok) throw new Error(rec.message || "Ingen anbefaling mulig.");
-      renderResult(rec, garment);
+      renderResult(rec, garment, { productKey, host });
     } catch (e) {
       showError(e.message || String(e));
       setAnalyzedPage(lastPage.title, lastPage.host, null);
@@ -185,11 +210,56 @@
           modelHint: garment.modelHint,
           fit: garment.fit,
           gender: profile.gender,
+          fitPref: profile.fit,
+          measurements: {
+            height: profile.height,
+            chest: profile.chest,
+            waist: profile.waist,
+            hip: profile.hip,
+            shoulder: profile.shoulder,
+          },
         },
       });
     } catch {
       return { ok: false, reason: "msg-failed" };
     }
+  }
+
+  // ---- per-product cache (consistency + saves credits) -------------------
+  // Keyed by product URL + a signature of the current measurements, so editing
+  // your profile correctly re-runs the AI instead of serving a stale answer.
+  function measureSig() {
+    const p = profile;
+    return [p.chest, p.waist, p.hip, p.shoulder, p.height, p.fit, p.gender].join("-");
+  }
+  async function getCached(productKey) {
+    if (!hasChrome) return null;
+    const { aiCache = {} } = await chrome.storage.local.get("aiCache");
+    const entry = aiCache[productKey + "|" + measureSig()];
+    if (!entry) return null;
+    // 30-day freshness
+    if (Date.now() - (entry.ts || 0) > 30 * 864e5) return null;
+    return entry;
+  }
+  async function setCached(productKey, data) {
+    if (!hasChrome) return;
+    const { aiCache = {} } = await chrome.storage.local.get("aiCache");
+    aiCache[productKey + "|" + measureSig()] = { ...data, ts: Date.now() };
+    // Prune to the 60 most recent entries.
+    const keys = Object.keys(aiCache);
+    if (keys.length > 60) {
+      keys.sort((a, b) => (aiCache[a].ts || 0) - (aiCache[b].ts || 0));
+      keys.slice(0, keys.length - 60).forEach((k) => delete aiCache[k]);
+    }
+    await chrome.storage.local.set({ aiCache });
+  }
+
+  // ---- feedback log (the seed of brand calibration / learning) -----------
+  async function saveFeedback(entry) {
+    if (!hasChrome) return;
+    const { feedbackLog = [] } = await chrome.storage.local.get("feedbackLog");
+    feedbackLog.push({ ...entry, ts: Date.now() });
+    await chrome.storage.local.set({ feedbackLog: feedbackLog.slice(-500) });
   }
 
   let lastPage = { title: "", host: "" };
@@ -220,7 +290,7 @@
       </div>`;
   }
 
-  function renderResult(rec, garment) {
+  function renderResult(rec, garment, ctx = {}) {
     $("#resultEmpty").hidden = true;
     $("#resultError").hidden = true;
     const card = $("#resultCard");
@@ -229,7 +299,8 @@
     const pct = Math.round(rec.confidence * 100);
     $("#gauge").innerHTML = gaugeSvg(pct, rec.level);
     $("#resSize").textContent = rec.size;
-    $("#resReason").textContent = rec.reason;
+    const chip = rec.intendedFit ? `<span class="fit-chip">${rec.intendedFit}</span> ` : "";
+    $("#resReason").innerHTML = chip + (rec.reason || "");
 
     $("#resBars").innerHTML = rec.breakdown
       .map(
@@ -248,17 +319,48 @@
     $("#resAlts").innerHTML =
       rec.alternatives && rec.alternatives.length
         ? `<span class="alts-label">Alternativer</span>` +
-          rec.alternatives.map((a) => `<span class="alt-chip">${a.size}</span>`).join("")
+          rec.alternatives
+            .map(
+              (a) =>
+                `<span class="alt-chip"${a.when ? ` title="${String(a.when).replace(/"/g, "")}"` : ""}>${a.size}</span>`
+            )
+            .join("")
         : "";
 
     let note;
     if (garment.source === "size-table") note = "Baseret på butikkens størrelsestabel.";
-    else if (garment.source === "ai-estimate") note = garment.note || "AI-estimat ud fra billeder og tekst.";
+    else if (garment.source === "ai-estimate") note = garment.note || "AI-vurdering ud fra billeder, model og dine mål.";
     else if (garment.source === "generic") note = garment.note || "Generisk standardtabel brugt.";
     else note = "Baseret på estimat.";
     $("#resSource").innerHTML = `<span>›</span><span>${note}</span>`;
 
+    renderFeedback(rec, garment);
     setAnalyzedPage(garment.title, garment.site, null);
+  }
+
+  function renderFeedback(rec, garment) {
+    const el = $("#resFeedback");
+    if (!el) return;
+    el.innerHTML = `
+      <span class="fb-q">Passede størrelse ${rec.size}?</span>
+      <div class="fb-btns">
+        <button data-v="small">For lille</button>
+        <button data-v="perfect">Perfekt</button>
+        <button data-v="big">For stor</button>
+      </div>`;
+    el.querySelectorAll("button").forEach((b) =>
+      b.addEventListener("click", () => {
+        saveFeedback({
+          site: garment.site,
+          product: garment.title,
+          size: rec.size,
+          source: garment.source,
+          intendedFit: rec.intendedFit || null,
+          verdict: b.dataset.v,
+        });
+        el.innerHTML = `<span class="fb-thanks">Tak! Det hjælper FitMatch med at blive klogere ✓</span>`;
+      })
+    );
   }
 
   function showError(msg) {

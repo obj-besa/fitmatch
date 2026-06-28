@@ -1,9 +1,13 @@
-/* EXAMPLE Netlify Function — multimodal AI fallback for FitMatch.
+/* Netlify Function — FitMatch AI size advisor (multimodal, model-anchored).
  *
  * Deploy on YOUR backend with ANTHROPIC_API_KEY set. NEVER put the key in the
- * extension. Receives the product page's images + text + model hint, asks Claude
- * to estimate the garment's body-fit measurements in cm, and returns them in the
- * shape engine.js expects (so the same local matching + UI is reused).
+ * extension. Receives the product images + text + model reference + the USER's
+ * own measurements, then reasons like a fit expert:
+ *   1. Read the intended fit from the images (how it drapes on the model).
+ *   2. Anchor to the model ("181 cm wearing M" = the intended look).
+ *   3. Estimate an anchored body-fit chart in cm.
+ *   4. Recommend the size that gives THIS user the same intended look.
+ * Returns the chart + a concrete recommendation; engine.js renders the bars.
  *
  *   npm i @anthropic-ai/sdk
  *   netlify env:set ANTHROPIC_API_KEY sk-ant-...
@@ -30,24 +34,59 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: CORS, body: JSON.stringify({ ok: false, error: "bad json" }) };
   }
 
-  const { pageText = "", images = [], type = "unknown", modelHint = null, fit = null, gender = "unisex" } = payload;
+  const {
+    pageText = "",
+    images = [],
+    type = "unknown",
+    modelHint = null,
+    fit = null,
+    gender = "unisex",
+    measurements = {},
+    fitPref = "regular",
+  } = payload;
 
-  const prompt = `Du er ekspert i tøjstørrelser. Ud fra produktbillederne og sidens tekst
-skal du estimere en størrelsestabel i CENTIMETER for de KROPSMÅL tøjet "passer til".
-Tag højde for snittet du ser på billederne (oversized, slim, regular osv.) og
-model-info hvis den findes.
+  const prompt = `Du er en af verdens dygtigste eksperter i tøjpasform og størrelser.
+Din opgave: anbefal PRÆCIST hvilken størrelse denne specifikke bruger skal vælge,
+så tøjet sidder som DESIGNET (samme look som på modellen). Vær konservativ og
+ærlig — det er bedre at sige "middel sikkerhed" end at gætte forkert.
 
-Kontekst:
-- Tøjtype: ${type}
-- Køn: ${gender}
-- Snit/fit fra siden: ${fit || "ukendt"}
-- Model-info: ${JSON.stringify(modelHint)}
+SÅDAN RÆSONNERER DU (følg rækkefølgen):
+1. SE PÅ BILLEDERNE. Bedøm det intenderede snit: oversized, relaxed, regular,
+   slim, croppet, longline? Hvordan falder stoffet på modellen (bredt/tætsiddende
+   over skuldre, bryst, talje)? Dette er vigtigere end markedsføringstekst.
+2. ANKER TIL MODELLEN. Modellen her er referencen for det intenderede look:
+   ${modelHint && modelHint.height ? `${modelHint.height} cm` : "højde ukendt"}, bærer størrelse
+   ${modelHint && modelHint.size ? modelHint.size : "ukendt"}. En model på den højde har typisk
+   kendte kropsmål — brug det til at forankre din tabel, så modellens størrelse
+   matcher den vidde man ser på billedet.
+3. ESTIMÉR en tabel over de KROPSMÅL (cm) hver størrelse er skåret til at passe,
+   forankret til modellen + den synlige vidde.
+4. ANBEFAL størrelse til DENNE bruger nedenfor. VIGTIGT: for oversized/relaxed tøj
+   må du IKKE skubbe brugeren en størrelse op bare fordi der er vidde — den vidde er
+   designet ind. Giv brugeren SAMME forhold til tøjet som modellen har. Hvis brugeren
+   ligner modellens kropstype, og modellen bærer M, så er svaret typisk M.
+   Brugerens ønske om pasform: "${fitPref}" (tight=tættere, regular=som designet, loose=rummeligere).
 
-Returnér KUN gyldig JSON i præcis dette format (udelad felter du ikke kan begrunde):
-{"type":"top|bottom|full","rows":[{"size":"S","chest":92,"waist":78,"hip":94,"shoulder":44}],"note":"kort begrundelse på dansk"}
+BRUGERENS MÅL (cm): ${JSON.stringify(measurements)}
+Tøjtype: ${type} · Køn: ${gender} · Snit fra tekst: ${fit || "ukendt"}
 
-Brug realistiske EU-konventioner. Hvis du er usikker, lav et fornuftigt skøn og
-skriv det i "note".
+Returnér KUN gyldig JSON, præcis dette format:
+{
+  "intendedFit": "oversized|relaxed|regular|slim|cropped|longline",
+  "type": "top|bottom|full",
+  "rows": [{"size":"S","chest":92,"waist":78,"hip":94,"shoulder":44}],
+  "recommendedSize": "M",
+  "confidence": 0.0-1.0,
+  "zones": [{"zone":"chest","fit":"relaxed"},{"zone":"shoulder","fit":"regular"},{"zone":"waist","fit":"oversized"}],
+  "reasoning": "2-3 sætninger på dansk: nævn hvad du SER på billederne, modellen som anker, og hvorfor netop denne størrelse passer brugeren",
+  "alternatives": [{"size":"S","when":"hvis du vil have et mindre oversized look"},{"size":"L","when":"hvis du vil have det endnu mere rummeligt"}]
+}
+
+I "zones" angiver du hvordan den ANBEFALEDE størrelse faktisk vil sidde på brugeren
+pr. kropszone, ud fra det du ser på billederne. Brug KUN disse værdier for "fit":
+"too-small", "tight", "snug", "regular", "relaxed", "oversized".
+
+confidence skal afspejle reel usikkerhed: høj (>0.7) kun når billeder + model + mål peger samme vej; lav (<0.45) når data er sparsomme.
 
 SIDENS TEKST:
 ${pageText.slice(0, 6000)}`;
@@ -62,10 +101,11 @@ ${pageText.slice(0, 6000)}`;
 
   try {
     const msg = await client.messages.create({
-      // Sonnet = god billed-/snit-forståelse til ~5× lavere pris end Opus.
-      // Skift til "claude-opus-4-8" hvis du vil have maks. præcision.
+      // Sonnet = stærk billed-/snit-forståelse til lav pris. Skift til
+      // "claude-opus-4-8" for maks. præcision.
       model: "claude-sonnet-4-6",
-      max_tokens: 1024,
+      max_tokens: 1500,
+      temperature: 0, // deterministisk → samme produkt giver samme svar
       messages: [{ role: "user", content }],
     });
 
@@ -81,7 +121,13 @@ ${pageText.slice(0, 6000)}`;
         unit: "cm",
         source: "ai-estimate",
         rows: Array.isArray(json.rows) ? json.rows : [],
-        note: json.note || "AI-estimat ud fra produktets billeder og tekst.",
+        recommendedSize: json.recommendedSize || null,
+        intendedFit: json.intendedFit || fit || null,
+        zones: Array.isArray(json.zones) ? json.zones : [],
+        confidence: typeof json.confidence === "number" ? json.confidence : null,
+        reasoning: json.reasoning || "AI-vurdering ud fra billeder, model og dine mål.",
+        alternatives: Array.isArray(json.alternatives) ? json.alternatives : [],
+        note: json.reasoning || "AI-estimat ud fra produktets billeder og tekst.",
       }),
     };
   } catch (e) {

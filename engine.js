@@ -43,6 +43,28 @@
     return { key: "oversized", label: "Meget løs", pct: 94 };
   }
 
+  // Per-zone fit breakdown for one size row vs the user's body (used by the UI bars).
+  function makeBreakdown(profile, row, zones) {
+    return zones
+      .map((z) => {
+        const bodyV = num(profile[z]);
+        const chartV = num(row[z]);
+        if (bodyV === null || chartV === null) return null;
+        const fit = classifyFit(chartV - bodyV);
+        return {
+          zone: z,
+          zoneLabel: ZONE_LABEL[z] || z,
+          gap: chartV - bodyV,
+          garmentValue: chartV,
+          bodyValue: bodyV,
+          key: fit.key,
+          fitLabel: fit.label,
+          pct: fit.pct,
+        };
+      })
+      .filter(Boolean);
+  }
+
   /**
    * @param {Object} profile  user body measurements + fit preference
    * @param {Object} garment  normalized garment data (see scrape.js / README)
@@ -83,24 +105,7 @@
       if (primGap < -2) penalty += 8 + Math.abs(primGap);
 
       // Per-zone fit breakdown (for the UI bars).
-      const breakdown = zones
-        .map((z) => {
-          const bodyV = num(profile[z]);
-          const chartV = num(row[z]);
-          if (bodyV === null || chartV === null) return null;
-          const fit = classifyFit(chartV - bodyV);
-          return {
-            zone: z,
-            zoneLabel: ZONE_LABEL[z] || z,
-            gap: chartV - bodyV,
-            garmentValue: chartV,
-            bodyValue: bodyV,
-            key: fit.key,
-            fitLabel: fit.label,
-            pct: fit.pct,
-          };
-        })
-        .filter(Boolean);
+      const breakdown = makeBreakdown(profile, row, zones);
 
       return { size: row.size, penalty, primGap, breakdown };
     });
@@ -145,5 +150,74 @@
     };
   }
 
-  root.FitMatch = { recommend, classifyFit, ZONE_LABEL };
+  /**
+   * Build a recommendation from the AI's anchored answer. The AI picks the size
+   * (using model reference + the fit it sees in the images), and we render the
+   * per-zone bars locally from its anchored chart so numbers stay consistent.
+   * @param {Object} profile  user measurements
+   * @param {Object} garment  must contain rows[] (AI-anchored chart) + type
+   * @param {Object} ai       { size, confidence, reason, alternatives, intendedFit }
+   */
+  // Preset fit styling so the AI's own per-zone verdict (from the images) can
+  // drive the bars directly, consistent with its overall judgment.
+  const FIT_PRESET = {
+    "too-small": { label: "For stram", pct: 5 },
+    tight: { label: "Stram", pct: 22 },
+    snug: { label: "Tætsiddende", pct: 40 },
+    regular: { label: "Regulær", pct: 58 },
+    relaxed: { label: "Løs", pct: 78 },
+    oversized: { label: "Meget løs", pct: 94 },
+  };
+
+  function fromAI(profile, garment, ai) {
+    const type = garment.type && ZONES_BY_TYPE[garment.type] ? garment.type : "unknown";
+    const zones = ZONES_BY_TYPE[type];
+    const rows = Array.isArray(garment.rows) ? garment.rows : [];
+    const want = String(ai.size || "").toUpperCase();
+    const row = rows.find((r) => String(r.size).toUpperCase() === want) || rows[0] || {};
+
+    let breakdown = makeBreakdown(profile, row, zones);
+
+    // If the AI graded each zone visually, use that for the bars (more accurate
+    // for eased/oversized garments), keeping the chart numbers for transparency.
+    if (Array.isArray(ai.zones) && ai.zones.length) {
+      const byChart = Object.fromEntries(breakdown.map((b) => [b.zone, b]));
+      breakdown = ai.zones
+        .map((z) => {
+          const key = FIT_PRESET[z.fit] ? z.fit : "regular";
+          const preset = FIT_PRESET[key];
+          const base = byChart[z.zone] || {};
+          return {
+            zone: z.zone,
+            zoneLabel: ZONE_LABEL[z.zone] || z.zone,
+            gap: base.gap ?? null,
+            garmentValue: base.garmentValue ?? null,
+            bodyValue: base.bodyValue ?? num(profile[z.zone]),
+            key,
+            fitLabel: preset.label,
+            pct: preset.pct,
+          };
+        })
+        .filter((b) => b.bodyValue != null);
+    }
+    let confidence = typeof ai.confidence === "number" ? ai.confidence : 0.6;
+    confidence = Math.max(0.08, Math.min(0.97, confidence));
+    const level = confidence >= 0.7 ? "high" : confidence >= 0.45 ? "medium" : "low";
+
+    return {
+      ok: true,
+      size: ai.size,
+      confidence,
+      level,
+      reason: ai.reason || "",
+      intendedFit: ai.intendedFit || null,
+      breakdown,
+      alternatives: (ai.alternatives || []).map((a) =>
+        typeof a === "string" ? { size: a } : { size: a.size, when: a.when }
+      ),
+      source: "ai-estimate",
+    };
+  }
+
+  root.FitMatch = { recommend, fromAI, makeBreakdown, classifyFit, ZONE_LABEL };
 })(typeof window !== "undefined" ? window : globalThis);
