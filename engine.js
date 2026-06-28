@@ -191,22 +191,50 @@
       .filter((b) => b.bodyValue != null);
   }
 
-  const PREF_SHIFT = { tight: -1, regular: 0, loose: 1 };
+  // How tight/roomy the primary zone may get before a size shift stops making
+  // sense. Margin-aware so a preference only moves the size when the numbers
+  // actually allow it — otherwise it stays put.
+  const TIGHT_FLOOR = -2; // garment may sit at most 2cm under your body before "too tight"
+  const LOOSE_CEIL = 18; // beyond ~18cm of room it's already a tent; don't add more
 
   function fromAI(profile, garment, ai) {
     const type = garment.type && ZONES_BY_TYPE[garment.type] ? garment.type : "unknown";
     const zones = ZONES_BY_TYPE[type];
     const rows = Array.isArray(garment.rows) ? garment.rows : [];
 
-    // The AI picks the INTENDED-look size (as the model wears it). Fit preference
-    // is then applied deterministically here, so it is always monotonic:
-    // tight = one size down, loose = one size up. Never the other way around.
+    // The AI picks the INTENDED-look size (as the model wears it). The fit
+    // preference is then resolved deterministically from the real margins, so it
+    // is always monotonic (tight ≤ regular ≤ loose) AND never overshoots: it only
+    // shifts a size when the measurements still support it, else it stays put.
     const want = String(ai.size || "").toUpperCase();
     let baseIdx = rows.findIndex((r) => String(r.size).toUpperCase() === want);
     if (baseIdx < 0) baseIdx = 0;
-    const wantShift = PREF_SHIFT[profile.fit] ?? 0;
-    const newIdx = Math.max(0, Math.min(rows.length - 1, baseIdx + wantShift));
-    const prefShift = newIdx - baseIdx; // -1, 0 or +1 after clamping
+
+    const primary = zones.find(
+      (z) => num(profile[z]) !== null && rows.some((r) => num(r[z]) !== null)
+    );
+    const gapAt = (i) => {
+      const cv = rows[i] ? num(rows[i][primary]) : null;
+      const body = num(profile[primary]);
+      return cv !== null && body !== null ? cv - body : null;
+    };
+
+    let newIdx = baseIdx;
+    if (primary) {
+      if (profile.fit === "tight" && baseIdx > 0) {
+        const cg = gapAt(baseIdx - 1);
+        if (cg !== null && cg >= TIGHT_FLOOR) newIdx = baseIdx - 1; // smaller still wearable
+      } else if (profile.fit === "loose" && baseIdx < rows.length - 1) {
+        const bg = gapAt(baseIdx);
+        if (bg === null || bg < LOOSE_CEIL) newIdx = baseIdx + 1; // not already swimming in it
+      }
+    } else {
+      // No measurable overlap — fall back to a gentle ±1 nudge.
+      const s = profile.fit === "tight" ? -1 : profile.fit === "loose" ? 1 : 0;
+      newIdx = Math.max(0, Math.min(rows.length - 1, baseIdx + s));
+    }
+
+    const prefShift = newIdx - baseIdx; // -1, 0 or +1
     const row = rows[newIdx] || rows[0] || {};
     const size = row.size != null ? row.size : ai.size;
 
@@ -227,6 +255,7 @@
       level,
       reason: ai.reason || "",
       prefShift,
+      prefRequested: profile.fit || "regular",
       intendedFit: ai.intendedFit || null,
       breakdown,
       alternatives: (ai.alternatives || []).map((a) =>

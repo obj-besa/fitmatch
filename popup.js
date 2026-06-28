@@ -312,9 +312,12 @@
   function reasonText(rec) {
     if (rec.source === "ai-estimate") {
       let r = rec.reason || "";
-      if (rec.prefShift < 0) r = T("reason.prefDown") + (r ? " " + r : "");
-      else if (rec.prefShift > 0) r = T("reason.prefUp") + (r ? " " + r : "");
-      return r;
+      let note = "";
+      if (rec.prefShift < 0) note = T("reason.prefDown");
+      else if (rec.prefShift > 0) note = T("reason.prefUp");
+      else if (rec.prefRequested === "tight") note = T("reason.heldTight");
+      else if (rec.prefRequested === "loose") note = T("reason.heldLoose");
+      return note ? note + (r ? " " + r : "") : r;
     }
     if (rec.reasonKey === "bestMatch" && rec.primaryZone) {
       let s = T("reason.bestMatch", {
