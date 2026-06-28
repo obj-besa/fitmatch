@@ -62,8 +62,9 @@ ${pageText.slice(0, 6000)}`;
 
   try {
     const msg = await client.messages.create({
-      // Opus = bedst til at "se" snit/pasform; skift til claude-sonnet-4-6 for lavere pris.
-      model: "claude-opus-4-8",
+      // Sonnet = god billed-/snit-forståelse til ~5× lavere pris end Opus.
+      // Skift til "claude-opus-4-8" hvis du vil have maks. præcision.
+      model: "claude-sonnet-4-6",
       max_tokens: 1024,
       messages: [{ role: "user", content }],
     });
