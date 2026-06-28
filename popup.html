@@ -8,15 +8,24 @@
   </head>
   <body>
     <header class="topbar">
-      <div class="brand">
-        <span class="logo" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-            <path d="M5 4h14l-2 6H7L5 4Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
-            <path d="M7 10v10h10V10" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
-            <path d="M9.5 14.5l1.8 1.8 3.2-3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <div class="topbar-row">
+        <div class="brand">
+          <span class="logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+              <path d="M5 4h14l-2 6H7L5 4Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M7 10v10h10V10" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M9.5 14.5l1.8 1.8 3.2-3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="brandname">FitMatch</span>
+        </div>
+        <button id="infoBtn" class="info-btn" data-i18n-title="how.btn" aria-label="How it works">
+          <svg viewBox="0 0 20 20" width="18" height="18" fill="none">
+            <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M10 9v4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <circle cx="10" cy="6.4" r="1.05" fill="currentColor"/>
           </svg>
-        </span>
-        <span class="brandname">FitMatch</span>
+        </button>
       </div>
       <nav class="tabs" id="tabs">
         <span class="tab-pill" id="tabPill"></span>
@@ -54,6 +63,7 @@
           </div>
 
           <div id="resBars" class="zones"></div>
+          <p id="resApprox" class="approx-note" hidden></p>
 
           <div id="resAlts" class="alts"></div>
           <p id="resSource" class="source-note"></p>
@@ -145,6 +155,29 @@
         </details>
       </section>
     </main>
+
+    <div id="howOverlay" class="overlay" hidden>
+      <div class="overlay-card">
+        <h2 class="overlay-title" data-i18n="how.title">How FitMatch works</h2>
+        <p class="overlay-intro" data-i18n="how.intro"></p>
+
+        <div class="how-step how-s1">
+          <p class="how-st" data-i18n="how.s1t"></p>
+          <p class="how-sx" data-i18n="how.s1"></p>
+        </div>
+        <div class="how-step how-s2">
+          <p class="how-st" data-i18n="how.s2t"></p>
+          <p class="how-sx" data-i18n="how.s2"></p>
+        </div>
+        <div class="how-step how-s3">
+          <p class="how-st" data-i18n="how.s3t"></p>
+          <p class="how-sx" data-i18n="how.s3"></p>
+        </div>
+
+        <p class="overlay-conf" data-i18n="how.conf"></p>
+        <button id="howClose" class="primary-btn" data-i18n="how.close">Got it</button>
+      </div>
+    </div>
 
     <script src="i18n.js"></script>
     <script src="engine.js"></script>

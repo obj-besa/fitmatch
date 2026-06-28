@@ -38,6 +38,13 @@ body {
   background: var(--card);
   border-bottom: 1px solid var(--line);
 }
+.topbar-row { display: flex; align-items: center; justify-content: space-between; }
+.info-btn {
+  background: none; border: none; cursor: pointer; color: var(--faint);
+  padding: 4px; display: grid; place-items: center; border-radius: 8px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.info-btn:hover { color: var(--brand); background: var(--brand-soft); }
 .brand { display: flex; align-items: center; gap: 9px; }
 .logo {
   width: 30px; height: 30px;
@@ -178,6 +185,36 @@ main { padding: 18px; }
 .analyzed-page .spin { display: inline-block; animation: spin 0.9s linear infinite; color: var(--brand); }
 @keyframes spin { to { transform: rotate(360deg); } }
 .howto-hint { font-size: 11.5px; color: var(--faint); line-height: 1.55; margin: 10px 0 0; }
+
+.approx-note { margin: 12px 0 0; font-size: 11px; font-weight: 600; color: var(--mid); font-style: italic; }
+
+/* how-it-works overlay */
+.overlay {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(20, 22, 29, 0.45);
+  display: flex; align-items: flex-end; justify-content: center;
+  animation: fade-in 0.18s ease;
+}
+.overlay[hidden] { display: none; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.overlay-card {
+  background: var(--bg); width: 100%; max-height: 92%; overflow-y: auto;
+  border-radius: 20px 20px 0 0; padding: 22px 18px 18px;
+  animation: slide-up 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes slide-up { from { transform: translateY(16px); } to { transform: none; } }
+.overlay-title { margin: 0 0 4px; font-size: 18px; font-weight: 800; letter-spacing: -0.3px; }
+.overlay-intro { margin: 0 0 16px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.how-step {
+  background: var(--card); border: 1px solid var(--line); border-radius: 13px;
+  padding: 13px 14px; margin-bottom: 10px; border-left: 3px solid var(--line);
+}
+.how-s1 { border-left-color: var(--good); }
+.how-s2 { border-left-color: var(--brand); }
+.how-s3 { border-left-color: var(--faint); }
+.how-st { margin: 0 0 4px; font-size: 13.5px; font-weight: 700; }
+.how-sx { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+.overlay-conf { margin: 14px 2px 18px; font-size: 12px; color: var(--faint); line-height: 1.5; }
 
 /* ---- profile ---- */
 .section-intro { margin: 0 0 16px; color: var(--muted); font-size: 12.5px; line-height: 1.55; }

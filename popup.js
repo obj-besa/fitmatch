@@ -339,6 +339,8 @@
     $("#resReason").innerHTML = chip + reasonText(rec);
 
     const gW = T("nums.garment"), yW = T("nums.you");
+    const approx = garment.source !== "size-table"; // AI/generic numbers are estimates
+    const pre = approx ? "~" : "";
     $("#resBars").innerHTML = rec.breakdown
       .map(
         (b) => `
@@ -350,12 +352,16 @@
           <div class="spectrum"><span class="spectrum-dot" style="left:${b.pct}%"></span></div>
           ${
             b.garmentValue != null
-              ? `<div class="zone-nums">${gW} <b>${b.garmentValue}</b> · ${yW} <b>${b.bodyValue}</b> cm</div>`
+              ? `<div class="zone-nums">${gW} <b>${pre}${b.garmentValue}</b> · ${yW} <b>${b.bodyValue}</b> cm</div>`
               : ""
           }
         </div>`
       )
       .join("");
+
+    const approxEl = $("#resApprox");
+    approxEl.hidden = !approx;
+    approxEl.textContent = approx ? T("res.approx") : "";
 
     $("#resAlts").innerHTML =
       rec.alternatives && rec.alternatives.length
@@ -436,5 +442,12 @@
     $("#f-lang").addEventListener("change", (e) => changeLang(e.target.value));
     $("#saveBtn").addEventListener("click", saveProfile);
     $("#analyzeBtn").addEventListener("click", analyze);
+
+    const overlay = $("#howOverlay");
+    $("#infoBtn").addEventListener("click", () => (overlay.hidden = false));
+    $("#howClose").addEventListener("click", () => (overlay.hidden = true));
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) overlay.hidden = true;
+    });
   });
 })();

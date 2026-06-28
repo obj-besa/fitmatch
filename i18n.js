@@ -76,6 +76,18 @@
       "err.notProductPage": "This page can't be analysed. Open a webshop product page.",
       "err.cannotRead": "Couldn't read the page.",
       "err.noRec": "No recommendation possible.",
+      "how.btn": "How it works",
+      "how.title": "How FitMatch works",
+      "how.intro": "FitMatch uses the most reliable source available, in this order:",
+      "how.s1t": "1 · Store's size chart",
+      "how.s1": "If the page lists real measurements, we match them exactly to your body. Highest confidence.",
+      "how.s2t": "2 · AI estimate",
+      "how.s2": "No chart? Claude reads the product photos, the model reference (e.g. \"181 cm wears M\") and your measurements to judge the fit. The measurements shown are approximate.",
+      "how.s3t": "3 · Generic chart",
+      "how.s3": "Nothing readable? We fall back to a standard chart — a rough guide only.",
+      "how.conf": "The confidence % reflects data quality, the source, and how clearly one size wins.",
+      "how.close": "Got it",
+      "res.approx": "≈ Estimated measurements — guidance, not exact",
     },
 
     da: {
@@ -149,6 +161,18 @@
       "err.notProductPage": "Denne side kan ikke analyseres. Åbn en webshop-produktside.",
       "err.cannotRead": "Kunne ikke læse siden.",
       "err.noRec": "Ingen anbefaling mulig.",
+      "how.btn": "Sådan virker det",
+      "how.title": "Sådan arbejder FitMatch",
+      "how.intro": "FitMatch bruger den mest pålidelige kilde der findes — i denne rækkefølge:",
+      "how.s1t": "1 · Butikkens størrelsestabel",
+      "how.s1": "Har siden rigtige mål, matcher vi dem præcist med din krop. Højeste sikkerhed.",
+      "how.s2t": "2 · AI-estimat",
+      "how.s2": "Ingen tabel? Claude læser produktbillederne, modellen (fx \"181 cm bærer M\") og dine mål for at vurdere pasformen. De viste mål er omtrentlige.",
+      "how.s3t": "3 · Generisk tabel",
+      "how.s3": "Intet læsbart? Vi falder tilbage på en standardtabel — kun et groft pejlemærke.",
+      "how.conf": "Sikkerheds-% afspejler datakvalitet, kilden, og hvor tydeligt én størrelse vinder.",
+      "how.close": "Forstået",
+      "res.approx": "≈ Estimerede mål — vejledende, ikke eksakte",
     },
 
     de: {
@@ -222,6 +246,18 @@
       "err.notProductPage": "Diese Seite kann nicht analysiert werden. Öffne eine Produktseite eines Shops.",
       "err.cannotRead": "Seite konnte nicht gelesen werden.",
       "err.noRec": "Keine Empfehlung möglich.",
+      "how.btn": "So funktioniert es",
+      "how.title": "So arbeitet FitMatch",
+      "how.intro": "FitMatch nutzt die zuverlässigste verfügbare Quelle — in dieser Reihenfolge:",
+      "how.s1t": "1 · Größentabelle des Shops",
+      "how.s1": "Hat die Seite echte Maße, gleichen wir sie genau mit deinem Körper ab. Höchste Sicherheit.",
+      "how.s2t": "2 · KI-Schätzung",
+      "how.s2": "Keine Tabelle? Claude liest die Produktfotos, das Model (z. B. \"181 cm trägt M\") und deine Maße, um die Passform zu beurteilen. Die angezeigten Maße sind ungefähr.",
+      "how.s3t": "3 · Generische Tabelle",
+      "how.s3": "Nichts Lesbares? Wir greifen auf eine Standardtabelle zurück — nur ein grober Anhaltspunkt.",
+      "how.conf": "Die Sicherheits-% spiegelt Datenqualität, Quelle und wie klar eine Größe gewinnt wider.",
+      "how.close": "Verstanden",
+      "res.approx": "≈ Geschätzte Maße — Richtwert, nicht exakt",
     },
 
     fr: {
@@ -295,6 +331,18 @@
       "err.notProductPage": "Cette page ne peut pas être analysée. Ouvrez une page produit d'une boutique.",
       "err.cannotRead": "Impossible de lire la page.",
       "err.noRec": "Aucune recommandation possible.",
+      "how.btn": "Comment ça marche",
+      "how.title": "Comment fonctionne FitMatch",
+      "how.intro": "FitMatch utilise la source la plus fiable disponible, dans cet ordre :",
+      "how.s1t": "1 · Guide des tailles de la boutique",
+      "how.s1": "Si la page indique de vraies mensurations, nous les comparons exactement à votre corps. Confiance maximale.",
+      "how.s2t": "2 · Estimation IA",
+      "how.s2": "Pas de guide ? Claude lit les photos du produit, le mannequin (ex. « 181 cm porte M ») et vos mensurations pour juger la coupe. Les mensurations affichées sont approximatives.",
+      "how.s3t": "3 · Tableau générique",
+      "how.s3": "Rien de lisible ? On se rabat sur un tableau standard — un repère approximatif uniquement.",
+      "how.conf": "Le % de confiance reflète la qualité des données, la source et la netteté du choix d'une taille.",
+      "how.close": "Compris",
+      "res.approx": "≈ Mensurations estimées — indicatives, pas exactes",
     },
 
     es: {
@@ -368,6 +416,18 @@
       "err.notProductPage": "Esta página no se puede analizar. Abre una página de producto de una tienda.",
       "err.cannotRead": "No se pudo leer la página.",
       "err.noRec": "No es posible una recomendación.",
+      "how.btn": "Cómo funciona",
+      "how.title": "Cómo funciona FitMatch",
+      "how.intro": "FitMatch usa la fuente más fiable disponible, en este orden:",
+      "how.s1t": "1 · Guía de tallas de la tienda",
+      "how.s1": "Si la página tiene medidas reales, las comparamos exactamente con tu cuerpo. Máxima confianza.",
+      "how.s2t": "2 · Estimación con IA",
+      "how.s2": "¿Sin guía? Claude lee las fotos del producto, el modelo (p. ej. \"181 cm usa M\") y tus medidas para juzgar el ajuste. Las medidas mostradas son aproximadas.",
+      "how.s3t": "3 · Tabla genérica",
+      "how.s3": "¿Nada legible? Recurrimos a una tabla estándar — solo una guía aproximada.",
+      "how.conf": "El % de confianza refleja la calidad de los datos, la fuente y cuán claramente gana una talla.",
+      "how.close": "Entendido",
+      "res.approx": "≈ Medidas estimadas — orientativas, no exactas",
     },
   };
 
@@ -386,6 +446,7 @@
     set("[data-i18n]", (el) => (el.textContent = t(el.getAttribute("data-i18n"), lang)));
     set("[data-i18n-html]", (el) => (el.innerHTML = t(el.getAttribute("data-i18n-html"), lang)));
     set("[data-i18n-ph]", (el) => el.setAttribute("placeholder", t(el.getAttribute("data-i18n-ph"), lang)));
+    set("[data-i18n-title]", (el) => el.setAttribute("title", t(el.getAttribute("data-i18n-title"), lang)));
     document.documentElement.lang = lang;
   }
 
