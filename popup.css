@@ -188,6 +188,25 @@ main { padding: 18px; }
 
 .approx-note { margin: 12px 0 0; font-size: 11px; font-weight: 600; color: var(--mid); font-style: italic; }
 
+.grid-hint { grid-column: 1 / -1; margin: 4px 0 0; font-size: 11.5px; color: var(--faint); font-weight: 500; }
+
+/* you vs model comparison */
+.compare {
+  margin-top: 16px; padding: 12px 14px; background: var(--bg);
+  border: 1px solid var(--line); border-radius: 12px;
+}
+.cmp-head, .cmp-row {
+  display: grid; grid-template-columns: 1fr auto auto 34px; align-items: center;
+  gap: 10px; padding: 4px 0;
+}
+.cmp-head { border-bottom: 1px solid var(--line); margin-bottom: 4px; padding-bottom: 7px; }
+.cmp-title { font-size: 12px; font-weight: 700; }
+.cmp-c-you, .cmp-c-mod { font-size: 10px; font-weight: 700; color: var(--faint); text-transform: uppercase; letter-spacing: 0.4px; text-align: right; }
+.cmp-z { font-size: 12px; color: var(--muted); font-weight: 600; }
+.cmp-you, .cmp-mod { font-size: 12.5px; font-weight: 700; text-align: right; }
+.cmp-mod { color: var(--muted); }
+.cmp-d { font-size: 11px; font-weight: 700; text-align: right; color: var(--faint); }
+
 /* how-it-works overlay */
 .overlay {
   position: fixed; inset: 0; z-index: 50;

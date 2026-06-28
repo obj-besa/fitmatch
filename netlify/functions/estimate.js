@@ -110,7 +110,9 @@ SÅDAN RÆSONNERER DU (følg rækkefølgen):
    ${modelHint && modelHint.height ? `${modelHint.height} cm` : "højde ukendt"}, bærer størrelse
    ${modelHint && modelHint.size ? modelHint.size : "ukendt"}. En model på den højde har typisk
    kendte kropsmål — brug det til at forankre din tabel, så modellens størrelse
-   matcher den vidde man ser på billedet.
+   matcher den vidde man ser på billedet. ESTIMÉR modellens egne kropsmål (cm) ud fra
+   højde + størrelse + det du ser — dem returnerer du i "modelEstimate" så brugeren kan
+   sammenligne sin egen krop med modellens.
 3. ESTIMÉR en tabel over de KROPSMÅL (cm) hver størrelse er skåret til at passe,
    forankret til modellen + den synlige vidde.
 4. ANBEFAL den INTENDEREDE størrelse til DENNE bruger — dvs. den størrelse der giver
@@ -130,8 +132,9 @@ Returnér KUN gyldig JSON, præcis dette format:
   "rows": [{"size":"S","chest":92,"waist":78,"hip":94,"shoulder":44}],
   "recommendedSize": "M",
   "confidence": 0.0-1.0,
+  "modelEstimate": {"height":181,"chest":94,"waist":80,"hip":96,"shoulder":45},
   "zones": [{"zone":"chest","fit":"relaxed"},{"zone":"shoulder","fit":"regular"},{"zone":"waist","fit":"oversized"}],
-  "reasoning": "2-3 sætninger på ${LANG_NAME}: nævn hvad du SER på billederne, modellen som anker, og hvorfor pasformen passer brugeren. NÆVN IKKE størrelsesbogstavet (S/M/L) i teksten — beskriv kun pasformen.",
+  "reasoning": "3-4 sætninger på ${LANG_NAME}: 1) hvad du SER på billederne (snittet), 2) modellen som anker, 3) en KONKRET sammenligning af brugerens mål med modellens estimerede mål (fx 'din brystvidde er 4 cm større end modellens, så...'), 4) hvorfor pasformen derfor passer. Brug også længde-mål (overkrop/ben/ærme) hvis de er angivet. NÆVN IKKE størrelsesbogstavet (S/M/L) i teksten — beskriv kun pasformen.",
   "alternatives": [{"size":"S","when":"hvis du vil have et mindre oversized look"},{"size":"L","when":"hvis du vil have det endnu mere rummeligt"}]
 }
 
@@ -176,6 +179,7 @@ ${pageText.slice(0, 6000)}`;
         rows: Array.isArray(json.rows) ? json.rows : [],
         recommendedSize: json.recommendedSize || null,
         intendedFit: json.intendedFit || fit || null,
+        modelEstimate: json.modelEstimate && typeof json.modelEstimate === "object" ? json.modelEstimate : null,
         zones: Array.isArray(json.zones) ? json.zones : [],
         confidence: typeof json.confidence === "number" ? json.confidence : null,
         reasoning: json.reasoning || "AI-vurdering ud fra billeder, model og dine mål.",

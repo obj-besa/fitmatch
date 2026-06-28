@@ -5,7 +5,7 @@
   const hasChrome = typeof chrome !== "undefined" && chrome.storage;
   const $ = (sel) => document.querySelector(sel);
 
-  const FIELDS = ["height", "chest", "waist", "hip", "shoulder"];
+  const FIELDS = ["height", "chest", "waist", "hip", "shoulder", "torso", "inseam", "sleeve"];
   let profile = { fit: "regular", gender: "unisex" };
   let lang = "en";
   let analyzeBtnHTML = "";
@@ -190,6 +190,7 @@
               alternatives: ai.alternatives,
               intendedFit: ai.intendedFit,
               zones: ai.zones,
+              modelEstimate: ai.modelEstimate,
             };
             rec = window.FitMatch.fromAI(profile, garment, aiRec);
             await setCached(productKey, { rows: ai.rows, type: garment.type, ai: aiRec });
@@ -240,6 +241,9 @@
             waist: profile.waist,
             hip: profile.hip,
             shoulder: profile.shoulder,
+            torso: profile.torso,
+            inseam: profile.inseam,
+            sleeve: profile.sleeve,
           },
         },
       });
@@ -253,7 +257,7 @@
     // Note: fit preference is applied deterministically after the AI call, so it
     // is intentionally NOT part of the key — changing it reuses the cache.
     const p = profile;
-    return [productKey, p.chest, p.waist, p.hip, p.shoulder, p.height, p.gender, lang].join("|");
+    return [productKey, p.chest, p.waist, p.hip, p.shoulder, p.height, p.torso, p.inseam, p.sleeve, p.gender, lang].join("|");
   }
   async function getCached(productKey) {
     if (!hasChrome) return null;
@@ -369,6 +373,8 @@
     approxEl.hidden = !approx;
     approxEl.textContent = approx ? T("res.approx") : "";
 
+    renderCompare(rec);
+
     $("#resAlts").innerHTML =
       rec.alternatives && rec.alternatives.length
         ? `<span class="alts-label">${T("alts.label")}</span>` +
@@ -388,6 +394,37 @@
 
     renderFeedback(rec, garment);
     setAnalyzedPage(garment.title, garment.site, null);
+  }
+
+  // "You vs the model" — your measurements against the AI's estimate of the model's,
+  // so the size choice is transparent and grounded in a concrete reference.
+  function renderCompare(rec) {
+    const el = $("#resCompare");
+    const m = rec.modelEstimate;
+    if (!el) return;
+    if (!m || typeof m !== "object") {
+      el.hidden = true;
+      el.innerHTML = "";
+      return;
+    }
+    const order = ["height", "chest", "waist", "hip", "shoulder", "torso", "inseam", "sleeve"];
+    const labelKey = (z) => (z === "height" || z === "torso" || z === "inseam" || z === "sleeve" ? "field." + z : "zone." + z);
+    const rows = order
+      .filter((z) => profile[z] != null && typeof m[z] === "number")
+      .map((z) => {
+        const you = profile[z], mod = m[z], d = Math.round(you - mod);
+        const delta = d === 0 ? "=" : d > 0 ? "+" + d : String(d);
+        return `<div class="cmp-row"><span class="cmp-z">${T(labelKey(z))}</span><span class="cmp-you">${you}</span><span class="cmp-mod">~${mod}</span><span class="cmp-d">${delta}</span></div>`;
+      });
+    if (!rows.length) {
+      el.hidden = true;
+      return;
+    }
+    el.hidden = false;
+    el.innerHTML =
+      `<div class="cmp-head"><span class="cmp-title">${T("compare.title")}</span>` +
+      `<span class="cmp-c-you">${T("nums.you")}</span><span class="cmp-c-mod">${T("compare.model")}</span><span></span></div>` +
+      rows.join("");
   }
 
   function renderFeedback(rec, garment) {

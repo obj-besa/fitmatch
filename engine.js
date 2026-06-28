@@ -257,6 +257,7 @@
       prefShift,
       prefRequested: profile.fit || "regular",
       intendedFit: ai.intendedFit || null,
+      modelEstimate: ai.modelEstimate || null,
       breakdown,
       alternatives: (ai.alternatives || []).map((a) =>
         typeof a === "string" ? { size: a } : { size: a.size, when: a.when }
