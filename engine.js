@@ -131,19 +131,18 @@
 
     const level = confidence >= 0.7 ? "high" : confidence >= 0.45 ? "medium" : "low";
 
-    // A short human reason.
+    // Structured reason fields — popup builds the localized sentence.
     const primFit = best.breakdown.find((b) => b.zone === primary);
-    let reasonText = `Bedste match på ${ZONE_LABEL[primary].toLowerCase()}`;
-    if (primFit) reasonText += ` (${primFit.fitLabel.toLowerCase()})`;
-    if (best.primGap < 0) reasonText += " — ligger lidt stramt, overvej en op";
 
     return {
       ok: true,
       size: best.size,
       confidence,
       level,
-      reason: reasonText,
+      reasonKey: "bestMatch",
       primaryZone: primary,
+      primaryFitKey: primFit ? primFit.key : null,
+      tight: best.primGap < 0,
       breakdown: best.breakdown,
       alternatives: scored.slice(1, 3).map((s) => ({ size: s.size, penalty: s.penalty })),
       source: garment.source,

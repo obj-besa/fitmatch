@@ -7,7 +7,12 @@
 
   const FIELDS = ["height", "chest", "waist", "hip", "shoulder"];
   let profile = { fit: "regular", gender: "unisex" };
+  let lang = "en";
   let analyzeBtnHTML = "";
+  let lastResult = null; // { rec, garment, ctx } — for re-render on language change
+
+  const T = (key, vars) =>
+    typeof window !== "undefined" && window.I18N ? window.I18N.t(key, lang, vars) : key;
 
   // Gender-aware generic "to fit body" fallback charts (cm), used only when the
   // page exposes no size table. Flagged low-confidence so the UI stays honest.
@@ -51,16 +56,26 @@
   GENERIC.unisex = GENERIC.herre; // neutral default leans to the broader fit
 
   // ---- storage -----------------------------------------------------------
-  async function loadProfile() {
-    if (!hasChrome) return;
-    const { profile: saved, apiEndpoint } = await chrome.storage.local.get(["profile", "apiEndpoint"]);
+  async function loadSettings() {
+    if (!hasChrome) {
+      applyLang("en");
+      return;
+    }
+    const { profile: saved, apiEndpoint, lang: savedLang } = await chrome.storage.local.get([
+      "profile",
+      "apiEndpoint",
+      "lang",
+    ]);
     if (saved) profile = saved;
+    lang = savedLang || "en";
     FIELDS.forEach((f) => {
       if (profile[f] != null) $(`#f-${f}`).value = profile[f];
     });
     if (apiEndpoint) $("#f-endpoint").value = apiEndpoint;
+    $("#f-lang").value = lang;
     setFit(profile.fit || "regular");
     setGender(profile.gender || "unisex");
+    applyLang(lang);
   }
 
   async function saveProfile() {
@@ -70,17 +85,32 @@
       if (!isNaN(v)) profile[f] = v;
     });
     const apiEndpoint = ($("#f-endpoint").value || "").trim();
-    if (hasChrome) await chrome.storage.local.set({ profile, apiEndpoint });
+    if (hasChrome) await chrome.storage.local.set({ profile, apiEndpoint, lang });
     const msg = $("#saveMsg");
     msg.hidden = false;
     setTimeout(() => (msg.hidden = true), 1800);
+  }
+
+  function applyLang(l) {
+    lang = l;
+    if (window.I18N) window.I18N.apply(lang);
+    analyzeBtnHTML = $("#analyzeBtn").innerHTML; // re-capture localized label
+    if (lastResult && !$("#resultCard").hidden) {
+      renderResult(lastResult.rec, lastResult.garment, lastResult.ctx);
+    }
+  }
+
+  async function changeLang(l) {
+    lang = l;
+    applyLang(l);
+    if (hasChrome) await chrome.storage.local.set({ lang });
   }
 
   function hasMeasurements() {
     return ["chest", "waist", "hip"].some((f) => profile[f] != null);
   }
 
-  // ---- tabs + fit toggle -------------------------------------------------
+  // ---- tabs + toggles ----------------------------------------------------
   function switchView(name) {
     document.querySelectorAll(".tab").forEach((t) =>
       t.classList.toggle("is-active", t.dataset.view === name)
@@ -111,32 +141,32 @@
     showError(null);
     if (!hasMeasurements()) {
       switchView("profile");
-      flashError("Udfyld mindst bryst/talje/hofte i din profil først.");
+      flashError(T("err.needMeasures"));
       return;
     }
     if (!hasChrome || !chrome.scripting) {
-      showError("Åbn FitMatch på en almindelig produktside i Chrome for at analysere.");
+      showError(T("err.openInChrome"));
       return;
     }
 
     const btn = $("#analyzeBtn");
     btn.disabled = true;
-    btn.textContent = "Analyserer …";
+    btn.textContent = T("btn.analyzing");
     $("#resultCard").hidden = true; // clear any stale result immediately
 
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab || /^(chrome|edge|about|chrome-extension):/.test(tab.url || "")) {
-        throw new Error("Denne side kan ikke analyseres. Åbn en webshop-produktside.");
+        throw new Error(T("err.notProductPage"));
       }
       const host = (() => { try { return new URL(tab.url).hostname.replace(/^www\./, ""); } catch { return ""; } })();
-      setAnalyzedPage(tab.title, host, "Læser siden …");
+      setAnalyzedPage(tab.title, host, T("analyzed.reading"));
 
       const [{ result: garment } = {}] = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         files: ["scrape.js"],
       });
-      if (!garment || !garment.ok) throw new Error("Kunne ikke læse siden.");
+      if (!garment || !garment.ok) throw new Error(T("err.cannotRead"));
 
       const productKey = (tab.url || "").split("#")[0].split("?")[0];
       let rec;
@@ -145,22 +175,20 @@
         // Real size table on the page → deterministic local match (no AI, no credits).
         rec = window.FitMatch.recommend(profile, garment);
       } else {
-        // No table → use the model-anchored, image-aware AI advisor (cached per product+profile).
+        // No table → model-anchored, image-aware AI advisor (cached per product+profile+lang).
         const cached = await getCached(productKey);
         if (cached) {
           garment.rows = cached.rows;
           garment.type = cached.type || garment.type;
           garment.source = "ai-estimate";
-          garment.note = cached.ai.reason;
           rec = window.FitMatch.fromAI(profile, garment, cached.ai);
         } else {
-          setAnalyzedPage(garment.title, garment.site, "AI vurderer billeder, model + dine mål …");
+          setAnalyzedPage(garment.title, garment.site, T("analyzed.ai"));
           const ai = await tryAI(garment);
           if (ai && ai.ok && ai.rows && ai.rows.length && ai.recommendedSize) {
             garment.rows = ai.rows;
             garment.type = ai.type || garment.type;
             garment.source = "ai-estimate";
-            garment.note = ai.reasoning || ai.note;
             const aiRec = {
               size: ai.recommendedSize,
               confidence: ai.confidence,
@@ -177,16 +205,14 @@
             garment.rows = g[gType];
             garment.type = gType;
             garment.source = "generic";
-            garment.note =
-              ai && ai.reason === "no-endpoint"
-                ? "Ingen tabel på siden, og AI-analyse er ikke sat op endnu – brugte en generisk standardtabel."
-                : "Ingen tabel fundet, og AI kunne ikke estimere – brugte en generisk standardtabel.";
+            garment.noteKey =
+              ai && ai.reason === "no-endpoint" ? "source.genericNoAI" : "source.generic";
             rec = window.FitMatch.recommend(profile, garment);
           }
         }
       }
 
-      if (!rec.ok) throw new Error(rec.message || "Ingen anbefaling mulig.");
+      if (!rec.ok) throw new Error(rec.message || T("err.noRec"));
       renderResult(rec, garment, { productKey, host });
     } catch (e) {
       showError(e.message || String(e));
@@ -211,6 +237,7 @@
           fit: garment.fit,
           gender: profile.gender,
           fitPref: profile.fit,
+          lang,
           measurements: {
             height: profile.height,
             chest: profile.chest,
@@ -226,26 +253,22 @@
   }
 
   // ---- per-product cache (consistency + saves credits) -------------------
-  // Keyed by product URL + a signature of the current measurements, so editing
-  // your profile correctly re-runs the AI instead of serving a stale answer.
-  function measureSig() {
+  function cacheKey(productKey) {
     const p = profile;
-    return [p.chest, p.waist, p.hip, p.shoulder, p.height, p.fit, p.gender].join("-");
+    return [productKey, p.chest, p.waist, p.hip, p.shoulder, p.height, p.fit, p.gender, lang].join("|");
   }
   async function getCached(productKey) {
     if (!hasChrome) return null;
     const { aiCache = {} } = await chrome.storage.local.get("aiCache");
-    const entry = aiCache[productKey + "|" + measureSig()];
+    const entry = aiCache[cacheKey(productKey)];
     if (!entry) return null;
-    // 30-day freshness
-    if (Date.now() - (entry.ts || 0) > 30 * 864e5) return null;
+    if (Date.now() - (entry.ts || 0) > 30 * 864e5) return null; // 30-day freshness
     return entry;
   }
   async function setCached(productKey, data) {
     if (!hasChrome) return;
     const { aiCache = {} } = await chrome.storage.local.get("aiCache");
-    aiCache[productKey + "|" + measureSig()] = { ...data, ts: Date.now() };
-    // Prune to the 60 most recent entries.
+    aiCache[cacheKey(productKey)] = { ...data, ts: Date.now() };
     const keys = Object.keys(aiCache);
     if (keys.length > 60) {
       keys.sort((a, b) => (aiCache[a].ts || 0) - (aiCache[b].ts || 0));
@@ -270,13 +293,13 @@
     lastPage = { title, host };
     el.innerHTML = status
       ? `<span class="spin">↻</span> ${status}`
-      : `Analyseret: <b>${name || host || "siden"}</b>${host ? " · " + host : ""}`;
+      : `${T("analyzed.prefix")} <b>${name || host || ""}</b>${host ? " · " + host : ""}`;
   }
 
   // ---- rendering ---------------------------------------------------------
   function gaugeSvg(pct, level) {
     const color = level === "high" ? "var(--good)" : level === "medium" ? "var(--mid)" : "var(--low)";
-    const cap = level === "high" ? "Høj" : level === "medium" ? "Middel" : "Lav";
+    const cap = T("cap." + level);
     const r = 32, c = 2 * Math.PI * r, off = c * (1 - pct / 100);
     return `
       <svg viewBox="0 0 78 78" width="78" height="78">
@@ -290,35 +313,53 @@
       </div>`;
   }
 
+  function reasonText(rec) {
+    if (rec.source === "ai-estimate" && rec.reason) return rec.reason;
+    if (rec.reasonKey === "bestMatch" && rec.primaryZone) {
+      let s = T("reason.bestMatch", {
+        zone: T("zone." + rec.primaryZone).toLowerCase(),
+        fit: rec.primaryFitKey ? T("fit." + rec.primaryFitKey).toLowerCase() : "",
+      });
+      if (rec.tight) s += T("reason.tightSuffix");
+      return s;
+    }
+    return rec.reason || "";
+  }
+
   function renderResult(rec, garment, ctx = {}) {
+    lastResult = { rec, garment, ctx };
     $("#resultEmpty").hidden = true;
     $("#resultError").hidden = true;
-    const card = $("#resultCard");
-    card.hidden = false;
+    $("#resultCard").hidden = false;
 
     const pct = Math.round(rec.confidence * 100);
     $("#gauge").innerHTML = gaugeSvg(pct, rec.level);
     $("#resSize").textContent = rec.size;
     const chip = rec.intendedFit ? `<span class="fit-chip">${rec.intendedFit}</span> ` : "";
-    $("#resReason").innerHTML = chip + (rec.reason || "");
+    $("#resReason").innerHTML = chip + reasonText(rec);
 
+    const gW = T("nums.garment"), yW = T("nums.you");
     $("#resBars").innerHTML = rec.breakdown
       .map(
         (b) => `
         <div class="zone fit-${b.key}">
           <div class="zone-head">
-            <span class="zone-name">${b.zoneLabel}</span>
-            <span class="zone-fit">${b.fitLabel}</span>
+            <span class="zone-name">${T("zone." + b.zone)}</span>
+            <span class="zone-fit">${T("fit." + b.key)}</span>
           </div>
           <div class="spectrum"><span class="spectrum-dot" style="left:${b.pct}%"></span></div>
-          <div class="zone-nums">Tøj <b>${b.garmentValue}</b> · Dig <b>${b.bodyValue}</b> cm</div>
+          ${
+            b.garmentValue != null
+              ? `<div class="zone-nums">${gW} <b>${b.garmentValue}</b> · ${yW} <b>${b.bodyValue}</b> cm</div>`
+              : ""
+          }
         </div>`
       )
       .join("");
 
     $("#resAlts").innerHTML =
       rec.alternatives && rec.alternatives.length
-        ? `<span class="alts-label">Alternativer</span>` +
+        ? `<span class="alts-label">${T("alts.label")}</span>` +
           rec.alternatives
             .map(
               (a) =>
@@ -328,10 +369,9 @@
         : "";
 
     let note;
-    if (garment.source === "size-table") note = "Baseret på butikkens størrelsestabel.";
-    else if (garment.source === "ai-estimate") note = garment.note || "AI-vurdering ud fra billeder, model og dine mål.";
-    else if (garment.source === "generic") note = garment.note || "Generisk standardtabel brugt.";
-    else note = "Baseret på estimat.";
+    if (garment.source === "size-table") note = T("source.sizeTable");
+    else if (garment.source === "ai-estimate") note = T("source.aiEstimate");
+    else note = T(garment.noteKey || "source.generic");
     $("#resSource").innerHTML = `<span>›</span><span>${note}</span>`;
 
     renderFeedback(rec, garment);
@@ -342,11 +382,11 @@
     const el = $("#resFeedback");
     if (!el) return;
     el.innerHTML = `
-      <span class="fb-q">Passede størrelse ${rec.size}?</span>
+      <span class="fb-q">${T("feedback.q", { size: rec.size })}</span>
       <div class="fb-btns">
-        <button data-v="small">For lille</button>
-        <button data-v="perfect">Perfekt</button>
-        <button data-v="big">For stor</button>
+        <button data-v="small">${T("feedback.small")}</button>
+        <button data-v="perfect">${T("feedback.perfect")}</button>
+        <button data-v="big">${T("feedback.big")}</button>
       </div>`;
     el.querySelectorAll("button").forEach((b) =>
       b.addEventListener("click", () => {
@@ -358,7 +398,7 @@
           intendedFit: rec.intendedFit || null,
           verdict: b.dataset.v,
         });
-        el.innerHTML = `<span class="fb-thanks">Tak! Det hjælper FitMatch med at blive klogere ✓</span>`;
+        el.innerHTML = `<span class="fb-thanks">${T("feedback.thanks")}</span>`;
       })
     );
   }
@@ -375,16 +415,15 @@
     box.textContent = msg;
   }
 
-  // show an error tied to the result view after a forced tab switch
   function flashError(msg) {
     switchView("result");
     showError(msg);
   }
 
   // ---- wire up -----------------------------------------------------------
-  document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", async () => {
+    await loadSettings();
     analyzeBtnHTML = $("#analyzeBtn").innerHTML;
-    loadProfile();
     document.querySelectorAll(".tab").forEach((t) =>
       t.addEventListener("click", () => switchView(t.dataset.view))
     );
@@ -394,6 +433,7 @@
     document.querySelectorAll("#genderToggle button").forEach((b) =>
       b.addEventListener("click", () => setGender(b.dataset.gender))
     );
+    $("#f-lang").addEventListener("change", (e) => changeLang(e.target.value));
     $("#saveBtn").addEventListener("click", saveProfile);
     $("#analyzeBtn").addEventListener("click", analyze);
   });

@@ -43,12 +43,18 @@ exports.handler = async (event) => {
     gender = "unisex",
     measurements = {},
     fitPref = "regular",
+    lang = "en",
   } = payload;
+
+  const LANG_NAME =
+    { en: "English", da: "Danish", de: "German", fr: "French", es: "Spanish" }[lang] || "English";
 
   const prompt = `Du er en af verdens dygtigste eksperter i tøjpasform og størrelser.
 Din opgave: anbefal PRÆCIST hvilken størrelse denne specifikke bruger skal vælge,
 så tøjet sidder som DESIGNET (samme look som på modellen). Vær konservativ og
 ærlig — det er bedre at sige "middel sikkerhed" end at gætte forkert.
+
+VIGTIGT: Skriv ALLE fritekst-felter ("reasoning" og hver "when") på ${LANG_NAME}.
 
 SÅDAN RÆSONNERER DU (følg rækkefølgen):
 1. SE PÅ BILLEDERNE. Bedøm det intenderede snit: oversized, relaxed, regular,
@@ -78,7 +84,7 @@ Returnér KUN gyldig JSON, præcis dette format:
   "recommendedSize": "M",
   "confidence": 0.0-1.0,
   "zones": [{"zone":"chest","fit":"relaxed"},{"zone":"shoulder","fit":"regular"},{"zone":"waist","fit":"oversized"}],
-  "reasoning": "2-3 sætninger på dansk: nævn hvad du SER på billederne, modellen som anker, og hvorfor netop denne størrelse passer brugeren",
+  "reasoning": "2-3 sætninger på ${LANG_NAME}: nævn hvad du SER på billederne, modellen som anker, og hvorfor netop denne størrelse passer brugeren",
   "alternatives": [{"size":"S","when":"hvis du vil have et mindre oversized look"},{"size":"L","when":"hvis du vil have det endnu mere rummeligt"}]
 }
 

@@ -194,6 +194,20 @@ main { padding: 18px; }
 .input-wrap input::placeholder { color: #c2c7d2; font-weight: 600; }
 .unit { position: absolute; right: 12px; font-size: 12px; color: var(--faint); font-weight: 600; pointer-events: none; }
 
+.select-wrap { position: relative; display: flex; }
+.select-wrap::after {
+  content: ""; position: absolute; right: 14px; top: 50%; width: 8px; height: 8px;
+  border-right: 2px solid var(--faint); border-bottom: 2px solid var(--faint);
+  transform: translateY(-65%) rotate(45deg); pointer-events: none;
+}
+.select-wrap select {
+  width: 100%; appearance: none; -webkit-appearance: none;
+  background: var(--card); border: 1.5px solid var(--line); border-radius: 11px;
+  padding: 11px 34px 11px 12px; color: var(--ink); font-size: 14px; font-weight: 700;
+  cursor: pointer;
+}
+.select-wrap select:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+
 .field-label { margin: 18px 0 9px; font-size: 12px; color: var(--muted); font-weight: 600; }
 .fit-toggle { display: flex; gap: 7px; }
 .fit-toggle button {

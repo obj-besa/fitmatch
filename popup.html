@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="da">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -20,8 +20,8 @@
       </div>
       <nav class="tabs" id="tabs">
         <span class="tab-pill" id="tabPill"></span>
-        <button class="tab is-active" data-view="result">Anbefaling</button>
-        <button class="tab" data-view="profile">Min profil</button>
+        <button class="tab is-active" data-view="result" data-i18n="tab.recommend">Recommendation</button>
+        <button class="tab" data-view="profile" data-i18n="tab.profile">My profile</button>
       </nav>
     </header>
 
@@ -37,10 +37,9 @@
               <path d="M40 44l3 3 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
-          <p class="empty-title">Find din rigtige størrelse</p>
-          <p class="empty-text">
-            Åbn en produktside i en webshop og tryk på knappen.
-            FitMatch læser tøjets mål og matcher dem med din profil.
+          <p class="empty-title" data-i18n="empty.title">Find your right size</p>
+          <p class="empty-text" data-i18n="empty.text">
+            Open a product page in a webshop and press the button.
           </p>
         </div>
 
@@ -48,7 +47,7 @@
           <div class="result-top">
             <div class="gauge" id="gauge"></div>
             <div class="result-meta">
-              <p class="result-kicker">Anbefalet størrelse</p>
+              <p class="result-kicker" data-i18n="res.kicker">Recommended size</p>
               <p id="resSize" class="result-size">M</p>
               <p id="resReason" class="result-reason"></p>
             </div>
@@ -70,75 +69,84 @@
             <circle cx="9" cy="9" r="6" stroke="#fff" stroke-width="1.8"/>
             <path d="m13.5 13.5 3 3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
           </svg>
-          Analysér denne side
+          <span data-i18n="btn.analyze">Analyse this page</span>
         </button>
       </section>
 
       <!-- PROFILE VIEW -->
       <section id="view-profile" class="view">
-        <p class="section-intro">
-          Dine mål gemmes kun lokalt i din browser og bruges til at beregne anbefalinger.
+        <label class="field field-wide" style="margin-bottom: 14px"><span data-i18n="profile.language">Language</span>
+          <span class="select-wrap">
+            <select id="f-lang">
+              <option value="en">English</option>
+              <option value="da">Dansk</option>
+              <option value="de">Deutsch</option>
+              <option value="fr">Français</option>
+              <option value="es">Español</option>
+            </select>
+          </span>
+        </label>
+
+        <p class="section-intro" data-i18n="profile.intro">
+          Your measurements are stored only locally in your browser.
         </p>
 
-        <p class="field-label" style="margin-top: 0">Køn</p>
+        <p class="field-label" style="margin-top: 0" data-i18n="profile.gender">Gender</p>
         <div class="fit-toggle" id="genderToggle">
-          <button data-gender="herre"><span>Herre</span></button>
-          <button data-gender="dame"><span>Dame</span></button>
-          <button data-gender="unisex" class="is-active"><span>Unisex</span></button>
+          <button data-gender="herre"><span data-i18n="gender.herre">Men</span></button>
+          <button data-gender="dame"><span data-i18n="gender.dame">Women</span></button>
+          <button data-gender="unisex" class="is-active"><span data-i18n="gender.unisex">Unisex</span></button>
         </div>
 
         <div class="field-grid" style="margin-top: 16px">
-          <label class="field field-wide">Højde
+          <label class="field field-wide"><span data-i18n="field.height">Height</span>
             <span class="input-wrap"><input type="number" id="f-height" inputmode="numeric" placeholder="180" /><span class="unit">cm</span></span>
           </label>
-          <label class="field">Bryst
+          <label class="field"><span data-i18n="field.chest">Chest</span>
             <span class="input-wrap"><input type="number" id="f-chest" inputmode="numeric" placeholder="100" /><span class="unit">cm</span></span>
           </label>
-          <label class="field">Talje
+          <label class="field"><span data-i18n="field.waist">Waist</span>
             <span class="input-wrap"><input type="number" id="f-waist" inputmode="numeric" placeholder="86" /><span class="unit">cm</span></span>
           </label>
-          <label class="field">Hofte
+          <label class="field"><span data-i18n="field.hip">Hip</span>
             <span class="input-wrap"><input type="number" id="f-hip" inputmode="numeric" placeholder="102" /><span class="unit">cm</span></span>
           </label>
-          <label class="field">Skulder
+          <label class="field"><span data-i18n="field.shoulder">Shoulder</span>
             <span class="input-wrap"><input type="number" id="f-shoulder" inputmode="numeric" placeholder="46" /><span class="unit">cm</span></span>
           </label>
         </div>
 
-        <p class="field-label">Foretrukken pasform</p>
+        <p class="field-label" data-i18n="profile.fitPref">Preferred fit</p>
         <div class="fit-toggle" id="fitToggle">
-          <button data-fit="tight"><span>Stram</span></button>
-          <button data-fit="regular" class="is-active"><span>Regulær</span></button>
-          <button data-fit="loose"><span>Løs</span></button>
+          <button data-fit="tight"><span data-i18n="pref.tight">Tight</span></button>
+          <button data-fit="regular" class="is-active"><span data-i18n="pref.regular">Regular</span></button>
+          <button data-fit="loose"><span data-i18n="pref.loose">Loose</span></button>
         </div>
 
-        <button id="saveBtn" class="primary-btn">Gem profil</button>
-        <p id="saveMsg" class="save-msg" hidden>Profil gemt</p>
+        <button id="saveBtn" class="primary-btn" data-i18n="btn.save">Save profile</button>
+        <p id="saveMsg" class="save-msg" hidden data-i18n="profile.saved">Profile saved</p>
 
         <details class="howto">
-          <summary>Sådan måler du rigtigt</summary>
+          <summary data-i18n="howto.summary">How to measure correctly</summary>
           <ul>
-            <li><b>Bryst</b> — rundt om det bredeste sted.</li>
-            <li><b>Talje</b> — rundt om det smalleste sted over navlen.</li>
-            <li><b>Hofte</b> — rundt om det bredeste sted over balderne.</li>
-            <li><b>Skulder</b> — fra skulderkant til skulderkant på ryggen.</li>
+            <li data-i18n-html="howto.chest"></li>
+            <li data-i18n-html="howto.waist"></li>
+            <li data-i18n-html="howto.hip"></li>
+            <li data-i18n-html="howto.shoulder"></li>
           </ul>
         </details>
 
         <details class="howto">
-          <summary>AI-analyse (avanceret)</summary>
-          <label class="field" style="margin-top: 12px">Backend-endpoint
-            <span class="input-wrap"><input type="text" id="f-endpoint" placeholder="https://dit-site/.netlify/functions/estimate" /></span>
+          <summary data-i18n="ai.summary">AI analysis (advanced)</summary>
+          <label class="field" style="margin-top: 12px"><span data-i18n="ai.endpointLabel">Backend endpoint</span>
+            <span class="input-wrap"><input type="text" id="f-endpoint" placeholder="https://your-site/.netlify/functions/estimate" /></span>
           </label>
-          <p class="howto-hint">
-            Når en side ikke har en størrelsestabel (fx ASOS, Zalando), sender FitMatch
-            produktets billeder + tekst hertil, hvor Claude estimerer målene.
-            Læg <b>aldrig</b> din API-nøgle i selve extensionen — kun i backend'en.
-          </p>
+          <p class="howto-hint" data-i18n-html="ai.hint"></p>
         </details>
       </section>
     </main>
 
+    <script src="i18n.js"></script>
     <script src="engine.js"></script>
     <script src="popup.js"></script>
   </body>
