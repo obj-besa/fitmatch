@@ -61,17 +61,12 @@
       applyLang("en");
       return;
     }
-    const { profile: saved, apiEndpoint, lang: savedLang } = await chrome.storage.local.get([
-      "profile",
-      "apiEndpoint",
-      "lang",
-    ]);
+    const { profile: saved, lang: savedLang } = await chrome.storage.local.get(["profile", "lang"]);
     if (saved) profile = saved;
     lang = savedLang || "en";
     FIELDS.forEach((f) => {
       if (profile[f] != null) $(`#f-${f}`).value = profile[f];
     });
-    if (apiEndpoint) $("#f-endpoint").value = apiEndpoint;
     $("#f-lang").value = lang;
     setFit(profile.fit || "regular");
     setGender(profile.gender || "unisex");
@@ -84,8 +79,7 @@
       const v = parseFloat($(`#f-${f}`).value);
       if (!isNaN(v)) profile[f] = v;
     });
-    const apiEndpoint = ($("#f-endpoint").value || "").trim();
-    if (hasChrome) await chrome.storage.local.set({ profile, apiEndpoint, lang });
+    if (hasChrome) await chrome.storage.local.set({ profile, lang });
     const msg = $("#saveMsg");
     msg.hidden = false;
     setTimeout(() => (msg.hidden = true), 1800);

@@ -6,9 +6,10 @@
  */
 
 const CONFIG = {
-  // Set in chrome.storage.local under "apiEndpoint" to enable AI fallback.
-  // Point it at YOUR backend (never ship an Anthropic key inside the extension).
-  defaultEndpoint: "",
+  // The production backend, baked in so the AI works out of the box for users.
+  // The URL is not secret — the Anthropic key lives only in the backend's env.
+  // Devs can override it via chrome.storage.local "apiEndpoint" (e.g. a test backend).
+  defaultEndpoint: "https://myfitmatch.netlify.app/.netlify/functions/estimate",
 };
 
 async function aiEstimateGarment(payload) {

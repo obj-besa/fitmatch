@@ -54,7 +54,9 @@ npm install @anthropic-ai/sdk      # tilføjer SDK'en til package.json
 4. Site settings → **Environment variables** → tilføj `ANTHROPIC_API_KEY`.
 5. Deploy. Funktionen ligger nu på
    `https://<dit-site>.netlify.app/.netlify/functions/estimate`.
-6. I FitMatch → **Min profil → AI-analyse (avanceret)** → indsæt URL'en → Gem.
+6. Endpointet er **bagt ind** i extensionen (`background.js` → `CONFIG.defaultEndpoint`),
+   så brugeren skal intet gøre. Skift den ene linje hvis du deployer til et andet site.
+   Devs kan midlertidigt overstyre via `chrome.storage.local.set({ apiEndpoint: "…" })`.
 
 Filer: funktionen i [`netlify/functions/estimate.js`](netlify/functions/estimate.js),
 config i [`netlify.toml`](netlify.toml).
