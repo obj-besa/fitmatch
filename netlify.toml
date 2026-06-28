@@ -1,0 +1,16 @@
+# Netlify-konfiguration for FitMatch backend (AI-estimat-funktionen).
+# Selve Chrome-extensionen deployes IKKE her – den loades lokalt via "Load unpacked".
+# Dette site hoster kun serverless-funktionen som extensionen kalder.
+
+[build]
+  functions = "netlify/functions"
+  publish = "public"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Tillad at extensionen (anden origin) kalder funktionen.
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"

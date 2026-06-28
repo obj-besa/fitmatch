@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="da">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="popup.css" />
+    <title>FitMatch</title>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+            <path d="M5 4h14l-2 6H7L5 4Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M7 10v10h10V10" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M9.5 14.5l1.8 1.8 3.2-3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="brandname">FitMatch</span>
+      </div>
+      <nav class="tabs" id="tabs">
+        <span class="tab-pill" id="tabPill"></span>
+        <button class="tab is-active" data-view="result">Anbefaling</button>
+        <button class="tab" data-view="profile">Min profil</button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- RESULT VIEW -->
+      <section id="view-result" class="view is-active">
+        <div id="resultEmpty" class="empty">
+          <div class="empty-art" aria-hidden="true">
+            <svg viewBox="0 0 64 64" width="56" height="56" fill="none">
+              <path d="M16 12h32l-5 14H21l-5-14Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+              <path d="M21 26v26h22V26" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+              <circle cx="44" cy="44" r="11" fill="var(--card)" stroke="currentColor" stroke-width="2.5"/>
+              <path d="M40 44l3 3 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <p class="empty-title">Find din rigtige størrelse</p>
+          <p class="empty-text">
+            Åbn en produktside i en webshop og tryk på knappen.
+            FitMatch læser tøjets mål og matcher dem med din profil.
+          </p>
+        </div>
+
+        <div id="resultCard" class="result-card" hidden>
+          <div class="result-top">
+            <div class="gauge" id="gauge"></div>
+            <div class="result-meta">
+              <p class="result-kicker">Anbefalet størrelse</p>
+              <p id="resSize" class="result-size">M</p>
+              <p id="resReason" class="result-reason"></p>
+            </div>
+          </div>
+
+          <div id="resBars" class="zones"></div>
+
+          <div id="resAlts" class="alts"></div>
+          <p id="resSource" class="source-note"></p>
+        </div>
+
+        <div id="resultError" class="error-card" hidden></div>
+
+        <p id="analyzedPage" class="analyzed-page" hidden></p>
+
+        <button id="analyzeBtn" class="primary-btn">
+          <svg viewBox="0 0 20 20" width="16" height="16" fill="none" aria-hidden="true">
+            <circle cx="9" cy="9" r="6" stroke="#fff" stroke-width="1.8"/>
+            <path d="m13.5 13.5 3 3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          Analysér denne side
+        </button>
+      </section>
+
+      <!-- PROFILE VIEW -->
+      <section id="view-profile" class="view">
+        <p class="section-intro">
+          Dine mål gemmes kun lokalt i din browser og bruges til at beregne anbefalinger.
+        </p>
+
+        <p class="field-label" style="margin-top: 0">Køn</p>
+        <div class="fit-toggle" id="genderToggle">
+          <button data-gender="herre"><span>Herre</span></button>
+          <button data-gender="dame"><span>Dame</span></button>
+          <button data-gender="unisex" class="is-active"><span>Unisex</span></button>
+        </div>
+
+        <div class="field-grid" style="margin-top: 16px">
+          <label class="field field-wide">Højde
+            <span class="input-wrap"><input type="number" id="f-height" inputmode="numeric" placeholder="180" /><span class="unit">cm</span></span>
+          </label>
+          <label class="field">Bryst
+            <span class="input-wrap"><input type="number" id="f-chest" inputmode="numeric" placeholder="100" /><span class="unit">cm</span></span>
+          </label>
+          <label class="field">Talje
+            <span class="input-wrap"><input type="number" id="f-waist" inputmode="numeric" placeholder="86" /><span class="unit">cm</span></span>
+          </label>
+          <label class="field">Hofte
+            <span class="input-wrap"><input type="number" id="f-hip" inputmode="numeric" placeholder="102" /><span class="unit">cm</span></span>
+          </label>
+          <label class="field">Skulder
+            <span class="input-wrap"><input type="number" id="f-shoulder" inputmode="numeric" placeholder="46" /><span class="unit">cm</span></span>
+          </label>
+        </div>
+
+        <p class="field-label">Foretrukken pasform</p>
+        <div class="fit-toggle" id="fitToggle">
+          <button data-fit="tight"><span>Stram</span></button>
+          <button data-fit="regular" class="is-active"><span>Regulær</span></button>
+          <button data-fit="loose"><span>Løs</span></button>
+        </div>
+
+        <button id="saveBtn" class="primary-btn">Gem profil</button>
+        <p id="saveMsg" class="save-msg" hidden>Profil gemt</p>
+
+        <details class="howto">
+          <summary>Sådan måler du rigtigt</summary>
+          <ul>
+            <li><b>Bryst</b> — rundt om det bredeste sted.</li>
+            <li><b>Talje</b> — rundt om det smalleste sted over navlen.</li>
+            <li><b>Hofte</b> — rundt om det bredeste sted over balderne.</li>
+            <li><b>Skulder</b> — fra skulderkant til skulderkant på ryggen.</li>
+          </ul>
+        </details>
+
+        <details class="howto">
+          <summary>AI-analyse (avanceret)</summary>
+          <label class="field" style="margin-top: 12px">Backend-endpoint
+            <span class="input-wrap"><input type="text" id="f-endpoint" placeholder="https://dit-site/.netlify/functions/estimate" /></span>
+          </label>
+          <p class="howto-hint">
+            Når en side ikke har en størrelsestabel (fx ASOS, Zalando), sender FitMatch
+            produktets billeder + tekst hertil, hvor Claude estimerer målene.
+            Læg <b>aldrig</b> din API-nøgle i selve extensionen — kun i backend'en.
+          </p>
+        </details>
+      </section>
+    </main>
+
+    <script src="engine.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

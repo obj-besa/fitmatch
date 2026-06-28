@@ -1,0 +1,9 @@
+{
+  "name": "fitmatch-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Serverless AI-estimat-funktion til FitMatch Chrome-extension",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.106.0"
+  }
+}
