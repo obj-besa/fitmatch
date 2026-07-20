@@ -153,7 +153,15 @@
       async function load(key) {
         const res = await fetch(API, { headers: { "x-stats-key": key } });
         if (res.status === 401) throw new Error("Wrong access key.");
-        if (!res.ok) throw new Error("Could not load stats (" + res.status + ").");
+        if (!res.ok) {
+          // Surface what the server actually said — a bare status code hides the cause.
+          let detail = "";
+          try {
+            const body = await res.json();
+            if (body && body.error) detail = " — " + body.error;
+          } catch {}
+          throw new Error("Could not load stats (" + res.status + ")" + detail);
+        }
         return res.json();
       }
 
