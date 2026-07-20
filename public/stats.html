@@ -131,6 +131,9 @@
         <div class="axis"><span id="axisFrom"></span><span id="axisTo"></span></div>
       </div>
 
+      <h2>Per shop <span class="sub">where the page reader struggles</span></h2>
+      <div class="card"><table id="shops"></table></div>
+
       <h2>Purchases &amp; commission</h2>
       <div class="note">
         <b>Not shown here — and it can't be.</b> Whether someone actually bought, and
@@ -228,6 +231,19 @@
         $("#axisFrom").textContent = d.days[0].date;
         $("#axisTo").textContent = d.days[d.days.length - 1].date;
 
+        // per-shop breakdown, worst reader performance first
+        const shops = Object.entries(d.shops || {}).sort((a, b) => b[1].total - a[1].total);
+        $("#shops").innerHTML = shops.length
+          ? "<tr><th>Shop</th><th>Results</th><th>Chart</th><th>AI</th><th>Generic</th></tr>" +
+            shops
+              .map(
+                ([name, c]) =>
+                  `<tr><td>${name}</td><td>${fmt(c.total)}</td><td>${fmt(c["size-table"])}</td>` +
+                  `<td>${fmt(c["ai-estimate"])}</td><td>${fmt(c.generic)}</td></tr>`
+              )
+              .join("")
+          : '<tr><td class="empty">No shop data yet.</td></tr>';
+
         // table
         $("#table").innerHTML =
           "<tr><th>Date</th><th>Active</th><th>Analyses</th><th>Chart</th><th>AI</th><th>Generic</th><th>Aff. clicks</th></tr>" +
@@ -247,7 +263,18 @@
         $("#tools").style.display = "flex";
       }
 
+      // Always show that work is happening — a button that does nothing for
+      // several seconds reads as broken.
+      function busy(on) {
+        const go = $("#go"), rf = $("#refresh");
+        go.disabled = rf.disabled = on;
+        go.textContent = on ? "Loading …" : "Open dashboard";
+        rf.textContent = on ? "Loading …" : "Refresh";
+      }
+
       async function enter(key) {
+        busy(true);
+        $("#err").textContent = "";
         try {
           const d = await load(key);
           localStorage.setItem("fm_stats_key", key);
@@ -255,6 +282,8 @@
         } catch (e) {
           $("#err").textContent = e.message;
           localStorage.removeItem("fm_stats_key");
+        } finally {
+          busy(false);
         }
       }
 

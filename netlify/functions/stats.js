@@ -1,10 +1,11 @@
 /* FitMatch stats — password-protected read of the aggregate counters.
  * Set STATS_KEY as an environment variable in Netlify.
+ *
+ * Reads one document per day, all 30 in parallel — a whole month is 31 requests
+ * rather than several hundred sequential ones.
  */
 const { getStore } = require("@netlify/blobs");
 
-// Netlify does not always auto-configure Blobs on newer sites. Fall back to
-// explicit credentials when they are available, so this works either way.
 function blobStore(name) {
   const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
   const token = process.env.NETLIFY_BLOBS_TOKEN;
@@ -30,7 +31,18 @@ function safeEqual(a, b) {
   return diff === 0;
 }
 
-const num = async (store, key) => Number((await store.get(key)) || 0);
+function blankDay(date) {
+  return {
+    date,
+    active: 0,
+    analyze: 0,
+    profile_saved: 0,
+    affiliate_click: 0,
+    src: { "size-table": 0, "ai-estimate": 0, generic: 0 },
+    fb: { small: 0, perfect: 0, big: 0 },
+    shops: {},
+  };
+}
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: CORS, body: "" };
@@ -39,32 +51,39 @@ exports.handler = async (event) => {
   if (!expected) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ ok: false, error: "STATS_KEY not configured" }) };
   }
-  const given = event.headers["x-stats-key"] || "";
-  if (!safeEqual(given, expected)) {
+  if (!safeEqual(event.headers["x-stats-key"] || "", expected)) {
     await new Promise((r) => setTimeout(r, 600)); // slow down guessing
     return { statusCode: 401, headers: CORS, body: JSON.stringify({ ok: false, error: "unauthorized" }) };
   }
 
   try {
     const store = blobStore("fitmatch-stats");
-    const days = [];
+    const dates = [];
     for (let i = DAYS - 1; i >= 0; i--) {
-      const d = new Date(Date.now() - i * 864e5).toISOString().slice(0, 10);
-      const row = { date: d };
-      row.active = await num(store, `d:${d}:active`);
-      row.analyze = await num(store, `d:${d}:analyze`);
-      row.profile_saved = await num(store, `d:${d}:profile_saved`);
-      row.affiliate_click = await num(store, `d:${d}:affiliate_click`);
-      row.src = {};
-      for (const s of SOURCES) row.src[s] = await num(store, `d:${d}:src:${s}`);
-      row.fb = {};
-      for (const v of VERDICTS) row.fb[v] = await num(store, `d:${d}:fb:${v}`);
-      days.push(row);
+      dates.push(new Date(Date.now() - i * 864e5).toISOString().slice(0, 10));
     }
 
-    const sum = (pick) => days.reduce((t, r) => t + pick(r), 0);
+    const [installsRaw, ...raws] = await Promise.all([
+      store.get("installs_total"),
+      ...dates.map((d) => store.get(`day:${d}`)),
+    ]);
+
+    const days = dates.map((d, i) => Object.assign(blankDay(d), JSON.parse(raws[i] || "null") || {}, { date: d }));
+
+    const sum = (pick) => days.reduce((t, r) => t + (pick(r) || 0), 0);
+    const shops = {};
+    for (const day of days) {
+      for (const [name, counts] of Object.entries(day.shops || {})) {
+        shops[name] = shops[name] || { "size-table": 0, "ai-estimate": 0, generic: 0, total: 0 };
+        for (const s of SOURCES) {
+          shops[name][s] += counts[s] || 0;
+          shops[name].total += counts[s] || 0;
+        }
+      }
+    }
+
     const totals = {
-      installs: await num(store, "installs_total"),
+      installs: Number(installsRaw || 0),
       analyze: sum((r) => r.analyze),
       profile_saved: sum((r) => r.profile_saved),
       affiliate_click: sum((r) => r.affiliate_click),
@@ -75,7 +94,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: CORS,
-      body: JSON.stringify({ ok: true, days, totals, generatedAt: new Date().toISOString() }),
+      body: JSON.stringify({ ok: true, days, totals, shops, generatedAt: new Date().toISOString() }),
     };
   } catch (err) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ ok: false, error: String(err) }) };
