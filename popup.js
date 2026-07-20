@@ -202,8 +202,15 @@
             garment.rows = g[gType];
             garment.type = gType;
             garment.source = "generic";
+            // Be explicit about WHY the AI didn't run — a technical failure must
+            // never look like a normal, trustworthy result.
+            const r = ai && ai.reason;
             garment.noteKey =
-              ai && ai.reason === "no-endpoint" ? "source.genericNoAI" : "source.generic";
+              r === "no-endpoint"
+                ? "source.genericNoAI"
+                : r && /^(http-|fetch-failed|msg-failed)/.test(r)
+                ? "source.genericAiFailed"
+                : "source.generic";
             rec = window.FitMatch.recommend(profile, garment);
           }
         }

@@ -8,7 +8,7 @@
 const CONFIG = {
   // The production backend, baked in so the AI works out of the box for users.
   // The URL is not secret — the Anthropic key lives only in the backend's env.
-  // Devs can override it via chrome.storage.local "apiEndpoint" (e.g. a test backend).
+  // Change it here (not via storage) if the backend ever moves.
   defaultEndpoint: "https://findfitmatch.netlify.app/.netlify/functions/estimate",
 };
 
@@ -22,9 +22,13 @@ async function getClientId() {
   return id;
 }
 
+// One-time cleanup: earlier builds let the endpoint be overridden from the UI and
+// stored it. That stored value now shadows the built-in endpoint and can point at
+// a site that no longer exists, so drop it.
+chrome.storage.local.remove("apiEndpoint");
+
 async function aiEstimateGarment(payload) {
-  const { apiEndpoint } = await chrome.storage.local.get("apiEndpoint");
-  const endpoint = apiEndpoint || CONFIG.defaultEndpoint;
+  const endpoint = CONFIG.defaultEndpoint;
   if (!endpoint) {
     return { ok: false, reason: "no-endpoint" };
   }
