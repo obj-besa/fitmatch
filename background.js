@@ -9,7 +9,7 @@ const CONFIG = {
   // The production backend, baked in so the AI works out of the box for users.
   // The URL is not secret — the Anthropic key lives only in the backend's env.
   // Devs can override it via chrome.storage.local "apiEndpoint" (e.g. a test backend).
-  defaultEndpoint: "https://myfitmatch.netlify.app/.netlify/functions/estimate",
+  defaultEndpoint: "https://findfitmatch.netlify.app/.netlify/functions/estimate",
 };
 
 // A stable anonymous per-install id, so the backend can apply a fair daily quota
