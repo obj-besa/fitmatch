@@ -15,10 +15,7 @@
 const Anthropic = require("@anthropic-ai/sdk");
 const { getStore } = require("@netlify/blobs");
 
-// Accept either spelling — the Netlify variable is named API_ANTHROPIC_KEY.
-const API_KEY = process.env.ANTHROPIC_API_KEY || process.env.API_ANTHROPIC_KEY;
-
-const client = new Anthropic({ apiKey: API_KEY });
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const CORS = {
   "Content-Type": "application/json",
