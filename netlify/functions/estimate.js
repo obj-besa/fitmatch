@@ -103,6 +103,9 @@ så tøjet sidder som DESIGNET (samme look som på modellen). Vær konservativ o
 
 VIGTIGT: Skriv ALLE fritekst-felter ("reasoning" og hver "when") på ${LANG_NAME}.
 
+VÆR KORTFATTET. Brugeren læser det i et lille popup-vindue, ikke en artikel.
+Ingen gentagelser, ingen fyldord, ingen opremsning af alle mål.
+
 SÅDAN RÆSONNERER DU (følg rækkefølgen):
 1. SE PÅ BILLEDERNE. Bedøm det intenderede snit: oversized, relaxed, regular,
    slim, croppet, longline? Hvordan falder stoffet på modellen (bredt/tætsiddende
@@ -135,13 +138,19 @@ Returnér KUN gyldig JSON, præcis dette format:
   "confidence": 0.0-1.0,
   "modelEstimate": {"height":181,"chest":94,"waist":80,"hip":96,"shoulder":45},
   "zones": [{"zone":"chest","fit":"relaxed"},{"zone":"shoulder","fit":"regular"},{"zone":"waist","fit":"oversized"}],
-  "reasoning": "3-4 sætninger på ${LANG_NAME}: 1) hvad du SER på billederne (snittet), 2) modellen som anker, 3) en KONKRET sammenligning af brugerens mål med modellens estimerede mål (fx 'din brystvidde er 4 cm større end modellens, så...'), 4) hvorfor pasformen derfor passer. Brug også længde-mål (overkrop/ben/ærme) hvis de er angivet. NÆVN IKKE størrelsesbogstavet (S/M/L) i teksten — beskriv kun pasformen.",
+  "reasoning": "MAKS 2 korte sætninger på ${LANG_NAME}, tilsammen UNDER 40 ord. Sætning 1: snittet du ser på billederne. Sætning 2: den konkrete forskel mellem brugerens og modellens mål — og hvad den betyder. NÆVN IKKE størrelsesbogstavet.",
   "alternatives": [{"size":"S","when":"hvis du vil have et mindre oversized look"},{"size":"L","when":"hvis du vil have det endnu mere rummeligt"}]
 }
 
 I "zones" angiver du hvordan den ANBEFALEDE størrelse faktisk vil sidde på brugeren
 pr. kropszone, ud fra det du ser på billederne. Brug KUN disse værdier for "fit":
 "too-small", "tight", "snug", "regular", "relaxed", "oversized".
+
+SÅDAN SKAL "reasoning" SE UD (længde og tone — oversat til ${LANG_NAME}):
+✓ "Løstsiddende tanktop med tydelig vidde over bryst og talje. Din brystvidde er
+   ~6 cm større end modellens, så du får samme løse fald som på billedet."
+✗ Gør IKKE dette: flere linjers beskrivelse, gentagne tillægsord om samme pasform,
+   opremsning af alle mål, eller forklaring af hvad tallene betyder.
 
 confidence skal afspejle reel usikkerhed: høj (>0.7) kun når billeder + model + mål peger samme vej; lav (<0.45) når data er sparsomme.
 
