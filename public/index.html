@@ -30,6 +30,7 @@
       .hero p{font-size:17px;color:var(--muted);max-width:620px;margin:0 auto 26px}
       .pill{display:inline-block;background:var(--brand-soft);color:var(--brand);font-size:12.5px;
         font-weight:700;padding:6px 14px;border-radius:99px;margin-bottom:20px}
+      .shot{margin-top:36px;filter:drop-shadow(0 18px 40px rgba(20,22,29,.13))}
 
       h2{font-size:26px;letter-spacing:-.5px;margin:0 0 10px;font-weight:800}
       .lead{color:var(--muted);margin:0 0 26px}
@@ -86,6 +87,66 @@
           measurements, and tells you which size to pick — with an honest confidence score.
           Fewer returns, less guessing.
         </p>
+
+        <div class="shot" role="img" aria-label="Screenshot of the FitMatch extension recommending size M with 79% confidence, fit shown per body zone, and a you-versus-model comparison.">
+          <svg viewBox="0 0 380 430" width="100%" style="max-width:360px;display:block;margin:0 auto">
+            <defs>
+              <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#5b5be0"/><stop offset="1" stop-color="#8155f6"/>
+              </linearGradient>
+            </defs>
+            <rect x="0" y="0" width="380" height="430" rx="18" fill="#fff" stroke="#e9ebf1" stroke-width="1.5"/>
+            <!-- topbar -->
+            <rect x="0" y="0" width="380" height="58" rx="18" fill="#fff"/>
+            <rect x="0" y="40" width="380" height="18" fill="#fff"/>
+            <rect x="20" y="16" width="26" height="26" rx="8" fill="url(#g)"/>
+            <text x="56" y="34" font-family="system-ui" font-size="14" font-weight="700" fill="#14161d">FitMatch</text>
+            <line x1="0" y1="58" x2="380" y2="58" stroke="#e9ebf1" stroke-width="1.5"/>
+            <!-- card -->
+            <rect x="20" y="78" width="340" height="330" rx="15" fill="#fff" stroke="#e9ebf1" stroke-width="1.5"/>
+            <!-- gauge -->
+            <circle cx="72" cy="126" r="27" fill="none" stroke="#e9ebf1" stroke-width="6"/>
+            <circle cx="72" cy="126" r="27" fill="none" stroke="#15a86b" stroke-width="6"
+              stroke-linecap="round" stroke-dasharray="170" stroke-dashoffset="36" transform="rotate(-90 72 126)"/>
+            <text x="72" y="126" font-family="system-ui" font-size="15" font-weight="800" fill="#15a86b" text-anchor="middle">79%</text>
+            <text x="72" y="138" font-family="system-ui" font-size="7" font-weight="700" fill="#15a86b" text-anchor="middle">HIGH</text>
+            <!-- size -->
+            <text x="118" y="106" font-family="system-ui" font-size="9" font-weight="700" fill="#9aa1b1" letter-spacing="0.6">RECOMMENDED SIZE</text>
+            <text x="118" y="140" font-family="system-ui" font-size="34" font-weight="800" fill="#14161d">M</text>
+            <rect x="152" y="118" width="66" height="19" rx="9.5" fill="#eeeefc"/>
+            <text x="185" y="131" font-family="system-ui" font-size="10" font-weight="700" fill="#5b5be0" text-anchor="middle">oversized</text>
+            <line x1="38" y1="166" x2="342" y2="166" stroke="#f1f2f6" stroke-width="1.5"/>
+            <!-- zone rows -->
+            <text x="38" y="188" font-family="system-ui" font-size="11" font-weight="700" fill="#14161d">Chest</text>
+            <text x="342" y="188" font-family="system-ui" font-size="10" font-weight="700" fill="#15a86b" text-anchor="end">Relaxed</text>
+            <rect x="38" y="195" width="304" height="5" rx="2.5" fill="#e9ebf1"/>
+            <circle cx="250" cy="197.5" r="6" fill="#fff" stroke="#15a86b" stroke-width="2.5"/>
+            <text x="38" y="224" font-family="system-ui" font-size="11" font-weight="700" fill="#14161d">Shoulder</text>
+            <text x="342" y="224" font-family="system-ui" font-size="10" font-weight="700" fill="#15a86b" text-anchor="end">Regular</text>
+            <rect x="38" y="231" width="304" height="5" rx="2.5" fill="#e9ebf1"/>
+            <circle cx="212" cy="233.5" r="6" fill="#fff" stroke="#15a86b" stroke-width="2.5"/>
+            <text x="38" y="260" font-family="system-ui" font-size="11" font-weight="700" fill="#14161d">Waist</text>
+            <text x="342" y="260" font-family="system-ui" font-size="10" font-weight="700" fill="#c8860a" text-anchor="end">Loose</text>
+            <rect x="38" y="267" width="304" height="5" rx="2.5" fill="#e9ebf1"/>
+            <circle cx="288" cy="269.5" r="6" fill="#fff" stroke="#c8860a" stroke-width="2.5"/>
+            <!-- compare -->
+            <rect x="38" y="288" width="304" height="86" rx="10" fill="#f4f5f8" stroke="#e9ebf1" stroke-width="1.2"/>
+            <text x="50" y="306" font-family="system-ui" font-size="10.5" font-weight="700" fill="#14161d">You vs the model</text>
+            <text x="270" y="306" font-family="system-ui" font-size="8" font-weight="700" fill="#9aa1b1" text-anchor="end">YOU</text>
+            <text x="330" y="306" font-family="system-ui" font-size="8" font-weight="700" fill="#9aa1b1" text-anchor="end">MODEL</text>
+            <text x="50" y="326" font-family="system-ui" font-size="10.5" fill="#5c6373">Height</text>
+            <text x="270" y="326" font-family="system-ui" font-size="10.5" font-weight="700" fill="#14161d" text-anchor="end">182</text>
+            <text x="330" y="326" font-family="system-ui" font-size="10.5" font-weight="700" fill="#5c6373" text-anchor="end">~181</text>
+            <text x="50" y="345" font-family="system-ui" font-size="10.5" fill="#5c6373">Chest</text>
+            <text x="270" y="345" font-family="system-ui" font-size="10.5" font-weight="700" fill="#14161d" text-anchor="end">100</text>
+            <text x="330" y="345" font-family="system-ui" font-size="10.5" font-weight="700" fill="#5c6373" text-anchor="end">~94</text>
+            <text x="50" y="364" font-family="system-ui" font-size="10.5" fill="#5c6373">Waist</text>
+            <text x="270" y="364" font-family="system-ui" font-size="10.5" font-weight="700" fill="#14161d" text-anchor="end">88</text>
+            <text x="330" y="364" font-family="system-ui" font-size="10.5" font-weight="700" fill="#5c6373" text-anchor="end">~80</text>
+            <!-- source -->
+            <text x="38" y="393" font-family="system-ui" font-size="9" fill="#9aa1b1">› AI assessment from the images, model and your measurements.</text>
+          </svg>
+        </div>
       </div>
 
       <section id="how">
