@@ -6,6 +6,14 @@
  */
 const { getStore } = require("@netlify/blobs");
 
+// Netlify does not always auto-configure Blobs on newer sites. Fall back to
+// explicit credentials when they are available, so this works either way.
+function blobStore(name) {
+  const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
+  const token = process.env.NETLIFY_BLOBS_TOKEN;
+  return siteID && token ? getStore({ name, siteID, token }) : getStore(name);
+}
+
 const CORS = {
   "Content-Type": "application/json",
   "Access-Control-Allow-Origin": "*",
@@ -52,7 +60,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const store = getStore("fitmatch-stats");
+    const store = blobStore("fitmatch-stats");
     const d = today();
 
     // Install + daily-active counts, without ever listing or storing a profile.

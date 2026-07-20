@@ -15,6 +15,14 @@
 const Anthropic = require("@anthropic-ai/sdk");
 const { getStore } = require("@netlify/blobs");
 
+// Netlify does not always auto-configure Blobs on newer sites. Fall back to
+// explicit credentials when they are available, so this works either way.
+function blobStore(name) {
+  const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
+  const token = process.env.NETLIFY_BLOBS_TOKEN;
+  return siteID && token ? getStore({ name, siteID, token }) : getStore(name);
+}
+
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const CORS = {
@@ -41,7 +49,7 @@ async function bump(store, key, limit) {
 // store errors so a storage hiccup never breaks the product for legit users.
 async function rateLimited(clientId, ip) {
   try {
-    const store = getStore("fitmatch-ratelimit");
+    const store = blobStore("fitmatch-ratelimit");
     const iso = new Date().toISOString();
     const day = iso.slice(0, 10); // yyyy-mm-dd
     const hour = iso.slice(0, 13); // yyyy-mm-ddTHH
