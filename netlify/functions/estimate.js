@@ -56,6 +56,24 @@ async function rateLimited(clientId, ip) {
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: CORS, body: "" };
+
+  // Safe diagnostic: reports WHETHER the key is visible to this function.
+  // Never returns the value — only presence, length and matching variable NAMES.
+  if (event.queryStringParameters && event.queryStringParameters.diag === "1") {
+    const k = process.env.ANTHROPIC_API_KEY;
+    return {
+      statusCode: 200,
+      headers: CORS,
+      body: JSON.stringify({
+        hasKey: !!k,
+        keyLength: k ? String(k).length : 0,
+        startsWithSkAnt: k ? String(k).startsWith("sk-ant-") : false,
+        matchingEnvNames: Object.keys(process.env).filter((n) => /ANTHROPIC|CLAUDE/i.test(n)),
+        node: process.version,
+      }),
+    };
+  }
+
   if (event.httpMethod !== "POST") return { statusCode: 405, headers: CORS, body: "Method not allowed" };
 
   let payload;
