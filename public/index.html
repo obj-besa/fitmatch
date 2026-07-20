@@ -1,18 +1,167 @@
 <!DOCTYPE html>
-<html lang="da">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>FitMatch backend</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FitMatch — find your right size on any webshop</title>
+    <meta name="description" content="FitMatch is an AI-powered Chrome extension that reads a product page and recommends the right clothing size based on your own measurements." />
     <style>
-      body { font-family: system-ui, sans-serif; background: #f4f5f8; color: #14161d; display: grid; place-items: center; height: 100vh; margin: 0; }
-      .box { text-align: center; }
-      code { background: #eeeefc; padding: 2px 6px; border-radius: 6px; }
+      :root {
+        --bg:#f4f5f8; --card:#fff; --ink:#14161d; --muted:#5c6373; --faint:#9aa1b1;
+        --line:#e9ebf1; --brand:#5b5be0; --brand-2:#8155f6; --brand-soft:#eeeefc;
+        --good:#15a86b; --mid:#c8860a;
+      }
+      *{box-sizing:border-box}
+      body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.6}
+      .wrap{max-width:940px;margin:0 auto;padding:0 22px}
+      a{color:var(--brand)}
+
+      header{background:var(--card);border-bottom:1px solid var(--line)}
+      .nav{display:flex;align-items:center;justify-content:space-between;padding:16px 0}
+      .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;letter-spacing:-.2px}
+      .logo{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;
+        background:linear-gradient(135deg,var(--brand),var(--brand-2));box-shadow:0 4px 10px rgba(91,91,224,.3)}
+      .nav a{margin-left:20px;font-size:14px;font-weight:600;text-decoration:none;color:var(--muted)}
+      .nav a:hover{color:var(--brand)}
+
+      .hero{padding:64px 0 52px;text-align:center}
+      .hero h1{font-size:42px;line-height:1.15;margin:0 0 16px;letter-spacing:-1.2px;font-weight:800}
+      .hero h1 span{background:linear-gradient(135deg,var(--brand),var(--brand-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+      .hero p{font-size:17px;color:var(--muted);max-width:620px;margin:0 auto 26px}
+      .pill{display:inline-block;background:var(--brand-soft);color:var(--brand);font-size:12.5px;
+        font-weight:700;padding:6px 14px;border-radius:99px;margin-bottom:20px}
+
+      h2{font-size:26px;letter-spacing:-.5px;margin:0 0 10px;font-weight:800}
+      .lead{color:var(--muted);margin:0 0 26px}
+      section{padding:44px 0;border-top:1px solid var(--line)}
+
+      .steps{display:grid;gap:14px}
+      @media(min-width:760px){.steps{grid-template-columns:repeat(3,1fr)}}
+      .step{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--line);
+        border-radius:14px;padding:18px}
+      .s1{border-left-color:var(--good)} .s2{border-left-color:var(--brand)} .s3{border-left-color:var(--faint)}
+      .step h3{margin:0 0 6px;font-size:15px;font-weight:700}
+      .step p{margin:0;font-size:14px;color:var(--muted)}
+
+      .feats{display:grid;gap:14px}
+      @media(min-width:760px){.feats{grid-template-columns:repeat(2,1fr)}}
+      .feat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+      .feat h3{margin:0 0 6px;font-size:15px;font-weight:700}
+      .feat p{margin:0;font-size:14px;color:var(--muted)}
+
+      .note{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+      .note strong{color:var(--ink)}
+
+      footer{border-top:1px solid var(--line);padding:28px 0 46px;color:var(--faint);font-size:13px}
+      footer a{color:var(--muted);text-decoration:none;margin-right:18px;font-weight:600}
+      footer a:hover{color:var(--brand)}
     </style>
   </head>
   <body>
-    <div class="box">
-      <h1>FitMatch backend</h1>
-      <p>AI-estimat-funktionen kører på <code>/.netlify/functions/estimate</code></p>
+    <header>
+      <div class="wrap nav">
+        <div class="brand">
+          <span class="logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+              <path d="M5 4h14l-2 6H7L5 4Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M7 10v10h10V10" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M9.5 14.5l1.8 1.8 3.2-3.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          FitMatch
+        </div>
+        <nav>
+          <a href="#how">How it works</a>
+          <a href="/privacy.html">Privacy</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap">
+      <div class="hero">
+        <span class="pill">AI-powered Chrome extension</span>
+        <h1>Find your <span>right size</span><br />on any webshop</h1>
+        <p>
+          FitMatch reads the product page you're on, compares the garment against your own
+          measurements, and tells you which size to pick — with an honest confidence score.
+          Fewer returns, less guessing.
+        </p>
+      </div>
+
+      <section id="how">
+        <h2>How it works</h2>
+        <p class="lead">FitMatch uses the most reliable source available, in this order:</p>
+        <div class="steps">
+          <div class="step s1">
+            <h3>1 · The store's size chart</h3>
+            <p>If the page lists real measurements, they're matched exactly to your body. Highest confidence.</p>
+          </div>
+          <div class="step s2">
+            <h3>2 · AI estimate</h3>
+            <p>No chart? The AI reads the product photos, the model reference ("181 cm wears M") and your measurements to judge the fit. Shown as an estimate, never as fact.</p>
+          </div>
+          <div class="step s3">
+            <h3>3 · Generic chart</h3>
+            <p>Nothing readable? It falls back to a standard chart — clearly marked as a rough guide only.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Built to be trusted</h2>
+        <p class="lead">A size recommendation is only useful if you can rely on it.</p>
+        <div class="feats">
+          <div class="feat">
+            <h3>Anchored to the model</h3>
+            <p>Instead of inventing numbers, it reasons from what's known: the model's height and size, and how the garment actually drapes in the photos.</p>
+          </div>
+          <div class="feat">
+            <h3>Honest about uncertainty</h3>
+            <p>Every result carries a confidence score, and estimated measurements are marked with ~ so you always know what's solid and what's a best guess.</p>
+          </div>
+          <div class="feat">
+            <h3>Fit per body zone</h3>
+            <p>See how it sits on chest, shoulders, waist and hips — not just a single letter.</p>
+          </div>
+          <div class="feat">
+            <h3>Consistent, not random</h3>
+            <p>The same garment always gives the same answer, and your fit preference is applied by fixed rules — never left to chance.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Your measurements stay yours</h2>
+        <div class="note">
+          <p style="margin:0 0 10px">
+            <strong>Your body measurements are stored locally in your browser</strong> — there are no
+            accounts, no sign-up, and nothing is sold or shared with advertisers.
+          </p>
+          <p style="margin:0">
+            To analyse a page, the product's text and image links are sent to our server for the AI
+            assessment. Read the full <a href="/privacy.html">privacy policy</a>.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2>Affiliate disclosure</h2>
+        <div class="note">
+          <p style="margin:0">
+            FitMatch may earn a commission if you choose to click a link to a retailer from the
+            extension and go on to buy something. This <strong>never</strong> affects the size we
+            recommend, and it costs you nothing. Links that can earn a commission are labelled as such.
+          </p>
+        </div>
+      </section>
     </div>
+
+    <footer>
+      <div class="wrap">
+        <a href="/privacy.html">Privacy policy</a>
+        <a href="mailto:kontakt@besadigital.dk">Contact</a>
+        <p style="margin:14px 0 0">© 2026 FitMatch</p>
+      </div>
+    </footer>
   </body>
 </html>
