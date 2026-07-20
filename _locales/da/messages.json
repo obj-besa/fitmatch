@@ -1,8 +1,4 @@
 {
-  "appName": {
-    "message": "FitMatch – find din rigtige størrelse"
-  },
-  "appDesc": {
-    "message": "Analyserer tøjets mål på produktsiden og anbefaler din størrelse ud fra dine egne mål."
-  }
+  "appName": { "message": "FitMatch – Find din rigtige tøjstørrelse" },
+  "appDesc": { "message": "Få en AI-størrelsesanbefaling i enhver webshop, ud fra dine egne mål. Færre returneringer, mindre gætteri." }
 }

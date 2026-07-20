@@ -1,16 +1,21 @@
 {
   "manifest_version": 3,
-  "name": "FitMatch – find din rigtige størrelse",
-  "version": "0.1.0",
-  "description": "Analyserer tøjets mål på produktsiden og anbefaler din størrelse ud fra dine egne mål.",
-  "default_locale": "da",
+  "name": "__MSG_appName__",
+  "description": "__MSG_appDesc__",
+  "version": "1.0.0",
+  "default_locale": "en",
   "permissions": ["storage", "activeTab", "scripting"],
-  "host_permissions": ["http://*/*", "https://*/*"],
+  "host_permissions": ["https://findfitmatch.netlify.app/*"],
   "action": {
     "default_popup": "popup.html",
     "default_title": "FitMatch"
   },
   "background": {
     "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   }
 }
