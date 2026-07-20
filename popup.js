@@ -154,7 +154,9 @@
         throw new Error(T("err.notProductPage"));
       }
       const host = (() => { try { return new URL(tab.url).hostname.replace(/^www\./, ""); } catch { return ""; } })();
-      setAnalyzedPage(tab.title, host, T("analyzed.reading"));
+      stepShownAt = 0;
+      lastPage = { title: tab.title, host };
+      await step(T("analyzed.reading"));
 
       const [{ result: garment } = {}] = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
@@ -167,17 +169,20 @@
 
       if (garment.rows && garment.rows.length) {
         // Real size table on the page → deterministic local match (no AI, no credits).
+        await step(T("analyzed.foundChart"));
         rec = window.FitMatch.recommend(profile, garment);
       } else {
         // No table → model-anchored, image-aware AI advisor (cached per product+profile+lang).
+        await step(T("analyzed.noChart"));
         const cached = await getCached(productKey);
         if (cached) {
+          await step(T("analyzed.cached"));
           garment.rows = cached.rows;
           garment.type = cached.type || garment.type;
           garment.source = "ai-estimate";
           rec = window.FitMatch.fromAI(profile, garment, cached.ai);
         } else {
-          setAnalyzedPage(garment.title, garment.site, T("analyzed.ai"));
+          await step(T("analyzed.ai", { n: (garment.images || []).length }));
           const ai = await tryAI(garment);
           if (ai && ai.ok && ai.rows && ai.rows.length && ai.recommendedSize) {
             garment.rows = ai.rows;
@@ -292,6 +297,17 @@
     const { feedbackLog = [] } = await chrome.storage.local.get("feedbackLog");
     feedbackLog.push({ ...entry, ts: Date.now() });
     await chrome.storage.local.set({ feedbackLog: feedbackLog.slice(-500) });
+  }
+
+  // Progress steps. Each step reports something that genuinely happened; the only
+  // timing trick is a minimum dwell so a fast step doesn't flash past unread.
+  const STEP_MIN_MS = 420;
+  let stepShownAt = 0;
+  async function step(text) {
+    const wait = Math.max(0, STEP_MIN_MS - (Date.now() - stepShownAt));
+    if (wait) await new Promise((r) => setTimeout(r, wait));
+    setAnalyzedPage(lastPage.title, lastPage.host, text);
+    stepShownAt = Date.now();
   }
 
   let lastPage = { title: "", host: "" };
