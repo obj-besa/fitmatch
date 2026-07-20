@@ -80,6 +80,7 @@
       if (!isNaN(v)) profile[f] = v;
     });
     if (hasChrome) await chrome.storage.local.set({ profile, lang });
+    track("profile_saved");
     const msg = $("#saveMsg");
     msg.hidden = false;
     setTimeout(() => (msg.hidden = true), 1800);
@@ -142,6 +143,8 @@
       showError(T("err.openInChrome"));
       return;
     }
+
+    track("analyze");
 
     const btn = $("#analyzeBtn");
     btn.disabled = true;
@@ -222,6 +225,7 @@
       }
 
       if (!rec.ok) throw new Error(rec.message || T("err.noRec"));
+      track("result", { source: garment.source, shop: host });
       renderResult(rec, garment, { productKey, host });
     } catch (e) {
       showError(e.message || String(e));
@@ -289,6 +293,16 @@
       keys.slice(0, keys.length - 60).forEach((k) => delete aiCache[k]);
     }
     await chrome.storage.local.set({ aiCache });
+  }
+
+  // Anonymous counter ping. Fire-and-forget; never blocks or breaks the flow.
+  function track(name, extra) {
+    if (!hasChrome || !chrome.runtime) return;
+    try {
+      chrome.runtime.sendMessage({ type: "TRACK", event: { name, ...(extra || {}) } });
+    } catch {
+      /* ignore */
+    }
   }
 
   // ---- feedback log (the seed of brand calibration / learning) -----------
@@ -470,6 +484,7 @@
           intendedFit: rec.intendedFit || null,
           verdict: b.dataset.v,
         });
+        track("feedback", { verdict: b.dataset.v });
         el.innerHTML = `<span class="fb-thanks">${T("feedback.thanks")}</span>`;
       })
     );

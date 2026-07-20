@@ -100,6 +100,10 @@ Privacy policy: https://findfitmatch.netlify.app/privacy.html
   are stored locally — declare "User activity: No", "Website content: Yes")
 - Website content: **Yes** — product page text and image links are sent to our
   backend to generate the size assessment.
+- User activity: **Yes** — anonymous, aggregate counts of in-extension actions
+  (an analysis was run, a profile was saved, a fit-feedback answer) plus the shop
+  *domain*. No product, URL, page title or measurement is ever included, and the
+  data cannot be linked back to a person.
 - Confirm: not sold to third parties, not used for unrelated purposes, not used
   for creditworthiness/lending.
 

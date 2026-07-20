@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>FitMatch — Stats</title>
+    <style>
+      :root{
+        --bg:#f4f5f8; --card:#fff; --ink:#14161d; --muted:#5c6373; --faint:#9aa1b1;
+        --line:#e9ebf1; --line-2:#f1f2f6;
+        --brand:#5b5be0; --brand-2:#8155f6;
+        /* validated categorical palette (see dataviz validator) */
+        --c-table:#15a86b; --c-ai:#5b5be0; --c-generic:#c8860a;
+        --fb-perfect:#15a86b; --fb-small:#c8860a; --fb-big:#d6455b;
+      }
+      *{box-sizing:border-box}
+      body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,system-ui,sans-serif;
+        background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.55}
+      .wrap{max-width:900px;margin:0 auto;padding:0 20px}
+
+      header{background:var(--card);border-bottom:1px solid var(--line)}
+      .nav{display:flex;align-items:center;justify-content:space-between;padding:15px 0}
+      .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:16px}
+      .logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--brand),var(--brand-2))}
+      .tools{display:flex;gap:8px}
+      button{font:inherit;cursor:pointer;border-radius:9px;border:1px solid var(--line);
+        background:var(--card);color:var(--muted);padding:7px 13px;font-size:13px;font-weight:600}
+      button:hover{border-color:var(--brand);color:var(--brand)}
+      .primary{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;border:none;padding:11px 16px}
+
+      /* gate */
+      .gate{max-width:360px;margin:80px auto;background:var(--card);border:1px solid var(--line);
+        border-radius:16px;padding:26px;text-align:center}
+      .gate h1{font-size:19px;margin:0 0 6px}
+      .gate p{color:var(--muted);font-size:13.5px;margin:0 0 18px}
+      .gate input{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;
+        font-size:15px;margin-bottom:12px;font-family:inherit}
+      .gate input:focus{outline:none;border-color:var(--brand)}
+      .err{color:#d6455b;font-size:13px;font-weight:600;margin-top:10px;min-height:18px}
+
+      main{padding:26px 0 60px;display:none}
+      h2{font-size:14px;margin:30px 0 12px;letter-spacing:.2px;font-weight:700}
+      .sub{color:var(--faint);font-size:12px;font-weight:500;margin-left:6px}
+
+      .kpis{display:grid;gap:12px;grid-template-columns:repeat(2,1fr)}
+      @media(min-width:680px){.kpis{grid-template-columns:repeat(4,1fr)}}
+      .kpi{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:14px 16px}
+      .kpi .n{font-size:26px;font-weight:800;letter-spacing:-.6px}
+      .kpi .l{font-size:11.5px;color:var(--muted);font-weight:600}
+
+      .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+
+      /* hero hit-rate */
+      .hero{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+      .hero .big{font-size:46px;font-weight:800;letter-spacing:-1.4px;line-height:1;color:var(--fb-perfect)}
+      .hero .cap{font-size:12.5px;color:var(--muted);font-weight:600}
+      .hero .side{flex:1;min-width:240px}
+
+      /* labelled horizontal bars */
+      .row{margin-bottom:12px}
+      .row:last-child{margin-bottom:0}
+      .rowhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+      .rowname{font-size:12.5px;font-weight:600}
+      .rowval{font-size:12.5px;font-weight:700;color:var(--muted)}
+      .track{height:9px;background:var(--line-2);border-radius:99px;overflow:hidden}
+      .fill{height:100%;border-radius:99px;min-width:3px}
+
+      /* daily bars */
+      .chart{display:flex;align-items:flex-end;gap:2px;height:130px;padding-top:8px;
+        border-bottom:1px solid var(--line)}
+      .bar{flex:1;background:var(--brand);border-radius:4px 4px 0 0;min-height:2px;position:relative;
+        transition:opacity .12s}
+      .bar:hover{opacity:.72}
+      .bar span{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
+        background:var(--ink);color:#fff;font-size:11px;font-weight:600;padding:4px 8px;border-radius:6px;
+        white-space:nowrap;z-index:5}
+      .bar:hover span{display:block}
+      .axis{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);margin-top:6px}
+
+      .note{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--brand);
+        border-radius:12px;padding:15px 17px;font-size:13.5px;color:var(--muted)}
+      .note b{color:var(--ink)}
+      details{margin-top:26px}
+      summary{cursor:pointer;font-size:13px;color:var(--muted);font-weight:600}
+      table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12.5px}
+      th,td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--line-2)}
+      th:first-child,td:first-child{text-align:left}
+      th{color:var(--faint);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+      .empty{color:var(--faint);font-size:13.5px}
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap nav">
+        <div class="brand"><span class="logo"></span> FitMatch <span class="sub">Stats</span></div>
+        <div class="tools" id="tools" style="display:none">
+          <button id="refresh">Refresh</button>
+          <button id="logout">Log out</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="gate" id="gate">
+      <h1>Stats access</h1>
+      <p>Enter the access key for this dashboard.</p>
+      <input type="password" id="key" placeholder="Access key" autocomplete="current-password" />
+      <button class="primary" id="go" style="width:100%">Open dashboard</button>
+      <div class="err" id="err"></div>
+    </div>
+
+    <main class="wrap" id="main">
+      <h2>Overview <span class="sub">last 30 days</span></h2>
+      <div class="kpis" id="kpis"></div>
+
+      <h2>Are the recommendations right? <span class="sub">from user feedback</span></h2>
+      <div class="card hero">
+        <div>
+          <div class="big" id="hitRate">—</div>
+          <div class="cap">rated “perfect”</div>
+        </div>
+        <div class="side" id="fbBars"></div>
+      </div>
+
+      <h2>Where the size data came from <span class="sub">quality of the page reader</span></h2>
+      <div class="card" id="srcBars"></div>
+
+      <h2>Analyses per day</h2>
+      <div class="card">
+        <div class="chart" id="chart"></div>
+        <div class="axis"><span id="axisFrom"></span><span id="axisTo"></span></div>
+      </div>
+
+      <h2>Purchases &amp; commission</h2>
+      <div class="note">
+        <b>Not shown here — and it can't be.</b> Whether someone actually bought, and
+        whether their affiliate cookie is still active, is data only the affiliate
+        network holds. Read conversions and commission in your <b>Skimlinks
+        dashboard</b>, then compare them against the affiliate clicks counted above.
+      </div>
+
+      <details>
+        <summary>Raw daily numbers</summary>
+        <table id="table"></table>
+      </details>
+    </main>
+
+    <script>
+      const API = "/.netlify/functions/stats";
+      const $ = (s) => document.querySelector(s);
+      const fmt = (n) => (n || 0).toLocaleString();
+
+      async function load(key) {
+        const res = await fetch(API, { headers: { "x-stats-key": key } });
+        if (res.status === 401) throw new Error("Wrong access key.");
+        if (!res.ok) throw new Error("Could not load stats (" + res.status + ").");
+        return res.json();
+      }
+
+      function bars(el, items, total) {
+        el.innerHTML = items
+          .map((it) => {
+            const pct = total ? Math.round((it.value / total) * 100) : 0;
+            return `<div class="row">
+              <div class="rowhead">
+                <span class="rowname">${it.label}</span>
+                <span class="rowval">${fmt(it.value)} · ${pct}%</span>
+              </div>
+              <div class="track"><div class="fill" style="width:${pct}%;background:${it.color}"></div></div>
+            </div>`;
+          })
+          .join("");
+      }
+
+      function render(d) {
+        const t = d.totals;
+        $("#kpis").innerHTML = [
+          ["Installs", t.installs],
+          ["Analyses", t.analyze],
+          ["Profiles saved", t.profile_saved],
+          ["Affiliate clicks", t.affiliate_click],
+        ]
+          .map(([l, n]) => `<div class="kpi"><div class="n">${fmt(n)}</div><div class="l">${l}</div></div>`)
+          .join("");
+
+        // feedback
+        const fbTotal = t.fb.small + t.fb.perfect + t.fb.big;
+        $("#hitRate").textContent = fbTotal ? Math.round((t.fb.perfect / fbTotal) * 100) + "%" : "—";
+        if (fbTotal) {
+          bars($("#fbBars"), [
+            { label: "Perfect", value: t.fb.perfect, color: "var(--fb-perfect)" },
+            { label: "Too small", value: t.fb.small, color: "var(--fb-small)" },
+            { label: "Too big", value: t.fb.big, color: "var(--fb-big)" },
+          ], fbTotal);
+        } else {
+          $("#fbBars").innerHTML = '<span class="empty">No feedback yet.</span>';
+        }
+
+        // sources
+        const srcTotal = t.src["size-table"] + t.src["ai-estimate"] + t.src.generic;
+        if (srcTotal) {
+          bars($("#srcBars"), [
+            { label: "Store's size chart", value: t.src["size-table"], color: "var(--c-table)" },
+            { label: "AI estimate", value: t.src["ai-estimate"], color: "var(--c-ai)" },
+            { label: "Generic fallback", value: t.src.generic, color: "var(--c-generic)" },
+          ], srcTotal);
+        } else {
+          $("#srcBars").innerHTML = '<span class="empty">No results recorded yet.</span>';
+        }
+
+        // daily chart
+        const max = Math.max(1, ...d.days.map((r) => r.analyze));
+        $("#chart").innerHTML = d.days
+          .map((r) => {
+            const h = Math.round((r.analyze / max) * 100);
+            return `<div class="bar" style="height:${Math.max(h, r.analyze ? 3 : 1)}%">
+              <span>${r.date} · ${fmt(r.analyze)}</span></div>`;
+          })
+          .join("");
+        $("#axisFrom").textContent = d.days[0].date;
+        $("#axisTo").textContent = d.days[d.days.length - 1].date;
+
+        // table
+        $("#table").innerHTML =
+          "<tr><th>Date</th><th>Active</th><th>Analyses</th><th>Chart</th><th>AI</th><th>Generic</th><th>Aff. clicks</th></tr>" +
+          d.days
+            .slice()
+            .reverse()
+            .map(
+              (r) =>
+                `<tr><td>${r.date}</td><td>${fmt(r.active)}</td><td>${fmt(r.analyze)}</td>` +
+                `<td>${fmt(r.src["size-table"])}</td><td>${fmt(r.src["ai-estimate"])}</td>` +
+                `<td>${fmt(r.src.generic)}</td><td>${fmt(r.affiliate_click)}</td></tr>`
+            )
+            .join("");
+
+        $("#gate").style.display = "none";
+        $("#main").style.display = "block";
+        $("#tools").style.display = "flex";
+      }
+
+      async function enter(key) {
+        try {
+          const d = await load(key);
+          localStorage.setItem("fm_stats_key", key);
+          render(d);
+        } catch (e) {
+          $("#err").textContent = e.message;
+          localStorage.removeItem("fm_stats_key");
+        }
+      }
+
+      $("#go").addEventListener("click", () => enter($("#key").value.trim()));
+      $("#key").addEventListener("keydown", (e) => { if (e.key === "Enter") $("#go").click(); });
+      $("#refresh").addEventListener("click", () => enter(localStorage.getItem("fm_stats_key") || ""));
+      $("#logout").addEventListener("click", () => {
+        localStorage.removeItem("fm_stats_key");
+        location.reload();
+      });
+
+      const saved = localStorage.getItem("fm_stats_key");
+      if (saved) enter(saved);
+    </script>
+  </body>
+</html>

@@ -47,9 +47,45 @@ async function aiEstimateGarment(payload) {
   }
 }
 
+/* ---- anonymous, aggregate telemetry --------------------------------------
+ * Only counts: which events happened and, for results, the shop DOMAIN.
+ * Never a product, a URL, a measurement or anything identifying. Batched so a
+ * burst of activity costs one request, and silently dropped if it fails —
+ * telemetry must never affect the product.
+ */
+const TRACK_ENDPOINT = CONFIG.defaultEndpoint.replace(/\/estimate$/, "/track");
+const FLUSH_DELAY_MS = 4000;
+let queue = [];
+let flushTimer = null;
+
+async function flush() {
+  flushTimer = null;
+  const events = queue.splice(0, 20);
+  if (!events.length) return;
+  try {
+    const clientId = await getClientId();
+    await fetch(TRACK_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientId, events }),
+    });
+  } catch {
+    /* ignore — never surface telemetry problems to the user */
+  }
+}
+
+function track(evt) {
+  queue.push(evt);
+  if (queue.length >= 20) return flush();
+  if (!flushTimer) flushTimer = setTimeout(flush, FLUSH_DELAY_MS);
+}
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === "AI_ESTIMATE") {
     aiEstimateGarment(msg.payload).then(sendResponse);
     return true; // async
+  }
+  if (msg?.type === "TRACK") {
+    track(msg.event || {});
   }
 });
